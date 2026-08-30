@@ -1,0 +1,19 @@
+DO THIS IS LAPTOP TERMINAL - npm install -g pnpm
+
+# 1. Setup Environment Configuration
+cp .env.example .env
+
+# 2. Start PostgreSQL / PostGIS Database (Make sure Docker Desktop is open)
+docker compose up -d
+
+# 3. Install Monorepo Dependencies
+pnpm install
+
+# 4. Sync Python Environment (ML Phase 1)
+uv sync --directory ml/phase1/training
+
+# 5. Start Development Server (Runs Next.js Web & NestJS API in parallel)
+pnpm dev
+
+# 6. Run Offline Demo
+pnpm demo:offline

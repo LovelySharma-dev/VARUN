@@ -1,0 +1,17 @@
+{
+  "name": "varun-sih26143",
+  "private": true,
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "train:phase1": "uv run --directory ml/phase1/training python -m src.train",
+    "evaluate:phase1": "uv run --directory ml/phase1/evaluation python evaluate_locked_test.py",
+    "demo:offline": "powershell -ExecutionPolicy Bypass -File scripts/demo-offline.ps1"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0"
+  }
+}

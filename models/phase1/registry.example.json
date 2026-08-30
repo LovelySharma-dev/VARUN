@@ -1,0 +1,5 @@
+{
+  "activeProductionModel": null,
+  "models": [],
+  "allowedStages": ["EXPERIMENTAL", "VALIDATED", "APPROVED", "PRODUCTION"]
+}

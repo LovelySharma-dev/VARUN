@@ -1,0 +1,75 @@
+# Dependencies & Package Managers
+node_modules/
+.pnpm-store/
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+
+# Turborepo & Build Outputs
+.turbo/
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo
+
+# Next.js (apps/web)
+.next/
+.vercel
+
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+*.egg-info/
+.eggs/
+
+# Environment Variables & Secrets
+.env
+.env*.local
+!.env.example
+*.pem
+*.key
+
+# Data, Model Weights & Artifacts
+data/raw/
+data/processed/
+data/environmental/
+artifacts/cases/
+ml/phase1/experiments/*/outputs/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+*.nc
+*.parquet
+*.tif
+*.tiff
+*.h5
+*.hdf5
+
+# Keep specific fixture and demo tracking files
+!data/fixtures/**
+!data/offline-demo/**
+!models/phase1/manifests/**
+
+# IDEs & System Files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.swp
+*.swo
+*.tmp
+*.log
