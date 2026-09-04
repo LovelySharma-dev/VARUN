@@ -1,0 +1,11 @@
+{
+  "case_id": "CASE_DEMO_001",
+  "phase2_run_id": "DRIFT_RUN_001",
+  "status": "COMPLETED",
+  "origin_center": [
+    72.42,
+    18.65
+  ],
+  "scenario_type": "controlled_synthetic_demo",
+  "real_world_claim_allowed": false
+}

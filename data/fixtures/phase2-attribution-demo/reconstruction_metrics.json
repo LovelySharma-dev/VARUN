@@ -1,0 +1,6 @@
+{
+  "metric_version": "synthetic-demo-v1",
+  "centroid_error_km": 1.8,
+  "iou": 0.71,
+  "scenario_type": "controlled_synthetic_demo"
+}

@@ -8,7 +8,8 @@ from pydantic import BaseModel, Field, ValidationError
 from app.phase2_loader import load_phase2_bundle
 from app.inference_v21 import score_ais_csv
 from app.model_registry import load_ais_model_package
-
+from app.attribution_pipeline import run_phase3_attribution
+from app.artifact_writer import write_phase3_artifacts
 app = FastAPI(
     title="VARUN Phase 3 AIS Engine",
     version="0.1.0",
@@ -23,6 +24,17 @@ class AISAnalysisRequest(BaseModel):
     window_stride: int = Field(default=2, ge=1, le=10)
     batch_size: int = Field(default=1024, ge=1, le=4096)
     top_vessels: int = Field(default=20, ge=1, le=100)
+
+class CandidateRankingRequest(BaseModel):
+    phase2_folder: str
+    ais_csv_path: str
+    window_stride: int = Field(default=2, ge=1, le=10)
+    batch_size: int = Field(default=1024, ge=1, le=4096)
+    top_candidates: int = Field(default=20, ge=1, le=100)
+
+class Phase3RunRequest(CandidateRankingRequest):
+    output_directory: str
+
 
 @app.get("/health")
 def health():
@@ -106,6 +118,131 @@ def analyze_ais(request: AISAnalysisRequest):
             detail=str(exc),
         ) from exc
 
+
+@app.post("/rank-candidates")
+def rank_phase3_candidates(
+    request: CandidateRankingRequest,
+):
+    try:
+        result = run_phase3_attribution(
+            request.phase2_folder,
+            request.ais_csv_path,
+            window_stride=request.window_stride,
+            batch_size=request.batch_size,
+        )
+
+        rankings = json.loads(
+            result.ranking.rankings
+            .head(request.top_candidates)
+            .to_json(orient="records")
+        )
+
+        return {
+            "status": "completed",
+            "case_id": result.contract.case_id,
+            "phase2_run_id": result.contract.phase2_run_id,
+            "model_version": (
+                result.model_package
+                .metadata["model_version"]
+            ),
+            "candidate_count": (
+                result.ranking.audit["candidate_count"]
+            ),
+            "scored_windows": (
+                result.inference_audit["scored_windows"]
+            ),
+            "dark_gap_event_count": len(
+                result.dark_gap_events
+            ),
+            "score_semantics": (
+                result.ranking.audit["score_semantics"]
+            ),
+            "calibration_status": (
+                result.ranking.audit["normalization"][
+                    "calibration_status"
+                ]
+            ),
+            "ranked_candidates": rankings,
+            "warnings": result.contract.warnings,
+        }
+
+    except (
+        FileNotFoundError,
+        NotADirectoryError,
+        ValueError,
+        KeyError,
+    ) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
+@app.post("/run-phase3")
+def run_phase3(request: Phase3RunRequest):
+    try:
+        result = run_phase3_attribution(
+            request.phase2_folder,
+            request.ais_csv_path,
+            window_stride=request.window_stride,
+            batch_size=request.batch_size,
+        )
+
+        artifacts = write_phase3_artifacts(
+            result,
+            request.output_directory,
+        )
+
+        top_candidates = json.loads(
+            result.ranking.rankings
+            .head(request.top_candidates)
+            .to_json(orient="records")
+        )
+
+        return {
+            "status": "completed",
+            "case_id": result.contract.case_id,
+            "phase2_run_id": result.contract.phase2_run_id,
+            "model_version": (
+                result.model_package
+                .metadata["model_version"]
+            ),
+            "output_directory": (
+                artifacts["output_directory"]
+            ),
+            "files": artifacts["files"],
+            "artifact_sha256": (
+                artifacts["artifact_sha256"]
+            ),
+            "candidate_count": (
+                result.ranking.audit["candidate_count"]
+            ),
+            "scored_windows": (
+                result.inference_audit["scored_windows"]
+            ),
+            "score_semantics": (
+                result.ranking.audit["score_semantics"]
+            ),
+            "calibration_status": (
+                result.ranking.audit["normalization"][
+                    "calibration_status"
+                ]
+            ),
+            "top_candidates": top_candidates,
+            "warnings": result.contract.warnings,
+        }
+
+    except (
+        FileExistsError,
+        FileNotFoundError,
+        NotADirectoryError,
+        ValueError,
+        KeyError,
+    ) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
+
+    
 @app.post("/validate-phase2")
 def validate_phase2(request: Phase2FolderRequest):
     try:

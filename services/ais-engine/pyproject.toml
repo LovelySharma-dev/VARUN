@@ -8,6 +8,8 @@ dependencies = [
     "numpy==2.5.2",
     "pandas==3.0.5",
     "pydantic==2.13.5",
+    "pyproj==3.7.2",
+    "shapely==2.1.2",
     "scikit-learn==1.6.1",
     "tensorflow==2.21.0",
     "uvicorn[standard]==0.52.4",

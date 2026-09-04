@@ -1,0 +1,150 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.56,
+            18.77
+          ],
+          [
+            72.49,
+            18.71
+          ],
+          [
+            72.42,
+            18.65
+          ],
+          [
+            72.36,
+            18.59
+          ]
+        ]
+      },
+      "properties": {
+        "particle_id": 1,
+        "direction": "backward",
+        "scenario_type": "controlled_synthetic_demo"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.56,
+            18.77
+          ],
+          [
+            72.49,
+            18.71
+          ],
+          [
+            72.42,
+            18.65
+          ],
+          [
+            72.36,
+            18.59
+          ]
+        ]
+      },
+      "properties": {
+        "particle_id": 2,
+        "direction": "backward",
+        "scenario_type": "controlled_synthetic_demo"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.56,
+            18.77
+          ],
+          [
+            72.49,
+            18.71
+          ],
+          [
+            72.42,
+            18.65
+          ],
+          [
+            72.36,
+            18.59
+          ]
+        ]
+      },
+      "properties": {
+        "particle_id": 3,
+        "direction": "backward",
+        "scenario_type": "controlled_synthetic_demo"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.56,
+            18.77
+          ],
+          [
+            72.49,
+            18.71
+          ],
+          [
+            72.42,
+            18.65
+          ],
+          [
+            72.36,
+            18.59
+          ]
+        ]
+      },
+      "properties": {
+        "particle_id": 4,
+        "direction": "backward",
+        "scenario_type": "controlled_synthetic_demo"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.56,
+            18.77
+          ],
+          [
+            72.49,
+            18.71
+          ],
+          [
+            72.42,
+            18.65
+          ],
+          [
+            72.36,
+            18.59
+          ]
+        ]
+      },
+      "properties": {
+        "particle_id": 5,
+        "direction": "backward",
+        "scenario_type": "controlled_synthetic_demo"
+      }
+    }
+  ]
+}

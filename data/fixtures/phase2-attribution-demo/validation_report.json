@@ -1,0 +1,7 @@
+{
+  "status": "PASSED",
+  "warnings": [
+    "Controlled synthetic Phase 2 attribution fixture; not a real hindcast result."
+  ],
+  "real_world_claim_allowed": false
+}
