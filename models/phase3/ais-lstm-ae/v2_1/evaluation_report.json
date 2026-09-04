@@ -1,0 +1,80 @@
+{
+  "report_version": "ais-final-synthetic-evaluation-v2.1",
+  "model_version": "ais-lstm-ae-v2.1",
+  "evaluation_status": "PASSED",
+  "evaluation_scope": "unseen presumed-normal test-vessel windows plus controlled synthetic behaviour anomalies",
+  "claim_boundary": "controlled synthetic stress-test performance; not real-world labelled oil-spill culprit accuracy",
+  "frozen_threshold": 0.06935688848908478,
+  "normal_test_windows": 52459,
+  "synthetic_anomaly_windows": 3600,
+  "total_evaluation_windows": 56059,
+  "confusion_matrix": {
+    "true_negative": 49279,
+    "false_positive": 3180,
+    "false_negative": 1083,
+    "true_positive": 2517
+  },
+  "metrics": {
+    "accuracy": 0.9239551187142118,
+    "precision": 0.4418114797261717,
+    "recall": 0.6991666666666667,
+    "f1_score": 0.5414649887060342,
+    "specificity": 0.9393812310566347,
+    "false_positive_rate": 0.06061876894336529,
+    "false_negative_rate": 0.30083333333333334,
+    "balanced_accuracy": 0.8192739488616507,
+    "matthews_correlation_coefficient": 0.5180600934160214,
+    "roc_auc": 0.940651259925741,
+    "average_precision": 0.3827835548346387
+  },
+  "per_anomaly_type": [
+    {
+      "anomaly_type": "ABRUPT_MANOEUVRING",
+      "windows": 1200,
+      "source_vessels": 248,
+      "detected_windows": 1163,
+      "missed_windows": 37,
+      "recall": 0.9691666666666666,
+      "median_anomaly_mse": 0.16475417568837186,
+      "p05_anomaly_mse": 0.07375996566632138,
+      "p95_anomaly_mse": 0.523297060504355,
+      "median_source_normal_mse": 0.015110534482522552,
+      "median_score_increase": 0.1338999523671905,
+      "median_score_ratio": 10.524347544265845
+    },
+    {
+      "anomaly_type": "LOITERING_TRANSITION",
+      "windows": 1200,
+      "source_vessels": 233,
+      "detected_windows": 1108,
+      "missed_windows": 92,
+      "recall": 0.9233333333333333,
+      "median_anomaly_mse": 0.15051077045382755,
+      "p05_anomaly_mse": 0.062269531685114746,
+      "p95_anomaly_mse": 0.4054906642521401,
+      "median_source_normal_mse": 0.014384034509660549,
+      "median_score_increase": 0.126444467839096,
+      "median_score_ratio": 9.656325185791488
+    },
+    {
+      "anomaly_type": "SUDDEN_SPEED_DROP",
+      "windows": 1200,
+      "source_vessels": 154,
+      "detected_windows": 246,
+      "missed_windows": 954,
+      "recall": 0.205,
+      "median_anomaly_mse": 0.03498159454534786,
+      "p05_anomaly_mse": 0.01354075784892613,
+      "p95_anomaly_mse": 0.17840931170967564,
+      "median_source_normal_mse": 0.014318134030407515,
+      "median_score_increase": 0.017989337460408913,
+      "median_score_ratio": 2.560603054013864
+    }
+  ],
+  "model_sha256": "1996072bab24d9325131ca54eb8f13e1f82641f938de5fbdc60eff2aab46d075",
+  "normal_scores_sha256": "7936de79b732bd3f81a98c968521b748ed268956a54abba75360eb0520e6eca6",
+  "synthetic_array_sha256": "08cbf0fe9fa252f1b1eb2f3e60dd726c945b80a256a7f6924cc1d2c460f90889",
+  "synthetic_scores_sha256": "a921d29d6f93867b65235458ac48001abf92d26b331151aea6a3eb7c38ff4df7",
+  "threshold_modified_using_test_data": false,
+  "model_modified_using_test_data": false
+}

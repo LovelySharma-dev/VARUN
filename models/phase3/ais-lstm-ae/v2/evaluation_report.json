@@ -1,0 +1,40 @@
+{
+    "model_version": "ais-lstm-ae-v2",
+    "test_roc_auc": 0.7139625438989119,
+    "test_pr_auc": 0.7953785400926702,
+    "confusion_matrix": {
+        "TN": 2077,
+        "FP": 115,
+        "FN": 2483,
+        "TP": 909
+    },
+    "overall_metrics": {
+        "precision": 0.8877,
+        "recall": 0.268,
+        "f1_score": 0.4117,
+        "false_positive_rate": 0.0525
+    },
+    "per_anomaly_metrics": {
+        "AIS_DARK_GAP": {
+            "test_count": 122,
+            "precision": 1.0,
+            "recall": 0.0738,
+            "f1_score": 0.1374
+        },
+        "LOITERING": {
+            "test_count": 370,
+            "precision": 1.0,
+            "recall": 0.1649,
+            "f1_score": 0.2831
+        },
+        "SUDDEN_SPEED_DROP": {
+            "test_count": 158,
+            "precision": 1.0,
+            "recall": 0.7215,
+            "f1_score": 0.8382
+        }
+    },
+    "normal_test_sequences_count": 2192,
+    "anomalous_test_sequences_count": 3392,
+    "assertion_status": "No vessel overlap was detected across train, validation and test splits; verified using disjoint vessel-ID assertions."
+}

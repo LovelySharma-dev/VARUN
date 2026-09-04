@@ -73,3 +73,5 @@ Thumbs.db
 *.swo
 *.tmp
 *.log
+*.backup
+repo-tree.txt

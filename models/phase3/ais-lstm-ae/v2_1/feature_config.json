@@ -1,0 +1,15 @@
+﻿{
+    "feature_order":  [
+                          "speed",
+                          "speed_change",
+                          "time_diff_min",
+                          "distance_step_km",
+                          "turn_angle_deg",
+                          "acceleration_kn_per_min",
+                          "net_displacement_km",
+                          "path_efficiency"
+                      ],
+    "circular_turn_formula":  "abs((current_course - previous_course + 180) % 360 - 180)",
+    "scaling_method":  "StandardScaler",
+    "fitted_on":  "training_vessels_only_presumed_normal_rows"
+}

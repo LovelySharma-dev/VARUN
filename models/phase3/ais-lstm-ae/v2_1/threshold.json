@@ -1,0 +1,27 @@
+{
+  "threshold_version": "ais-threshold-v2.1",
+  "model_version": "ais-lstm-ae-v2.1",
+  "reconstruction_error_threshold": 0.06935688848908478,
+  "score_definition": "mean squared reconstruction error across 10 timesteps and 8 features",
+  "comparison_operator": "greater_than",
+  "selection_dataset": "frozen validation presumed-normal vessel windows",
+  "selection_method": "validation_normal_95th_percentile",
+  "percentile": 95.0,
+  "numpy_percentile_method": "linear",
+  "validation_window_count": 52934,
+  "empirical_validation_alert_count": 2647,
+  "empirical_validation_alert_rate": 0.05000566743491896,
+  "model_file": "model_selected_unthresholded_v21.keras",
+  "model_sha256": "1996072bab24d9325131ca54eb8f13e1f82641f938de5fbdc60eff2aab46d075",
+  "feature_order": [
+    "speed",
+    "speed_change",
+    "time_diff_min",
+    "distance_step_km",
+    "turn_angle_deg",
+    "acceleration_kn_per_min",
+    "net_displacement_km",
+    "path_efficiency"
+  ],
+  "test_data_used": false
+}

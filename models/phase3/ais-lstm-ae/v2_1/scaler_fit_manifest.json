@@ -1,0 +1,30 @@
+{
+  "manifest_version": "ais-scaler-fit-v2.1",
+  "model_target_version": "ais-lstm-ae-v2.1",
+  "scaler_type": "StandardScaler",
+  "scikit_learn_version": "1.6.1",
+  "fit_scope": "training-vessels-only; presumed-normal operational AIS; no synthetic injection",
+  "timesteps": 10,
+  "random_seed": 42,
+  "maximum_rows_per_vessel": 500,
+  "eligible_training_rows_before_cap": 1071504,
+  "scaler_fit_rows_after_cap": 756274,
+  "scaler_fit_vessels": 1915,
+  "maximum_actual_rows_from_one_vessel": 500,
+  "feature_count": 8,
+  "feature_order": [
+    "speed",
+    "speed_change",
+    "time_diff_min",
+    "distance_step_km",
+    "turn_angle_deg",
+    "acceleration_kn_per_min",
+    "net_displacement_km",
+    "path_efficiency"
+  ],
+  "feature_order_sha256": "00deb3c7f45f621c082868612fa0701b84e24b8769053d3d0f688ebb8b8e9830",
+  "training_vessel_ids_sha256": "28df0730f5e207be728e00c417313b0cd893bb9b06436effe7e703c80977253f",
+  "synthetic_anomalies_used": false,
+  "validation_data_used": false,
+  "test_data_used": false
+}
