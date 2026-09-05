@@ -1,0 +1,89 @@
+{
+  "status": "completed",
+  "caseId": "CASE_DEMO_001",
+  "phase2RunId": "DRIFT_RUN_001",
+  "modelVersion": "ais-lstm-ae-v2.1",
+  "outputDirectory": "artifacts/cases/CASE_DEMO_001/phase3/DRIFT_RUN_001",
+  "files": [
+    "ranked_candidates.json",
+    "candidate_features.csv",
+    "candidate_tracks.geojson",
+    "dark_gap_events.json",
+    "phase3_summary.json"
+  ],
+  "artifactSha256": {
+    "ranked_candidates.json": "374c0b81eae4091b41b34ecd660f5f608f64f49dd05db90d2b84ff9d4adfcb1a",
+    "candidate_features.csv": "ab9756a8208eafcd3aa2c28976d16c72d57a03a9569a9146e4c9a0ead32021b6",
+    "candidate_tracks.geojson": "e30e7360d16498c4907affe4086975e537ec96be146c091b6831582cd2ce4b17",
+    "dark_gap_events.json": "c0fa38add2c15cc375b23f38b829cd77bb6886ba95f7734a82a2d4166eb136a1"
+  },
+  "candidateCount": 3,
+  "scoredWindows": 240,
+  "scoreSemantics": "INVESTIGATIVE_PRIORITY_NOT_RESPONSIBILITY_PROBABILITY",
+  "calibrationStatus": "CONTROLLED_DEMO_HEURISTIC_NOT_REAL_WORLD_CALIBRATED",
+  "topCandidates": [
+    {
+      "rank": 1,
+      "candidateId": "candidate-68f8b1f0ac34",
+      "investigativePriorityScore": 0.8721806411,
+      "originProximityScore": 0.8458988945,
+      "originDwellScore": 1.0,
+      "releaseTimeAlignmentScore": 0.8464817249,
+      "corridorAlignmentScore": 0.9998459292,
+      "behaviourRuleScore": 1.0,
+      "lstmContinuousScore": 0.6751353866,
+      "darkGapScore": 0.0,
+      "enteredOrigin50": true,
+      "enteredOrigin75": true,
+      "enteredOrigin90": true,
+      "minimumOriginCenterDistanceM": 836.7771827967,
+      "minimumCorridorDistanceM": 0.7704134978,
+      "closestOriginMidpointOffsetMin": 60.0,
+      "scoreSemantics": "INVESTIGATIVE_PRIORITY_NOT_RESPONSIBILITY_PROBABILITY",
+      "calibrationStatus": "CONTROLLED_DEMO_HEURISTIC_NOT_REAL_WORLD_CALIBRATED"
+    },
+    {
+      "rank": 2,
+      "candidateId": "candidate-7669d2a91e2d",
+      "investigativePriorityScore": 0.6307190116,
+      "originProximityScore": 0.9240589025,
+      "originDwellScore": 0.4583333333,
+      "releaseTimeAlignmentScore": 0.9862071167,
+      "corridorAlignmentScore": 0.9986403946,
+      "behaviourRuleScore": 0.0,
+      "lstmContinuousScore": 0.664543185,
+      "darkGapScore": 0.0,
+      "enteredOrigin50": true,
+      "enteredOrigin75": true,
+      "enteredOrigin90": true,
+      "minimumOriginCenterDistanceM": 394.8973105398,
+      "minimumCorridorDistanceM": 6.8026524815,
+      "closestOriginMidpointOffsetMin": 5.0,
+      "scoreSemantics": "INVESTIGATIVE_PRIORITY_NOT_RESPONSIBILITY_PROBABILITY",
+      "calibrationStatus": "CONTROLLED_DEMO_HEURISTIC_NOT_REAL_WORLD_CALIBRATED"
+    },
+    {
+      "rank": 3,
+      "candidateId": "candidate-8fcff6b97422",
+      "investigativePriorityScore": 0.1484769382,
+      "originProximityScore": 0.0346775827,
+      "originDwellScore": 0.0,
+      "releaseTimeAlignmentScore": 0.3114032239,
+      "corridorAlignmentScore": 0.3954552077,
+      "behaviourRuleScore": 0.0,
+      "lstmContinuousScore": 0.6755755557,
+      "darkGapScore": 0.0,
+      "enteredOrigin50": false,
+      "enteredOrigin75": false,
+      "enteredOrigin90": false,
+      "minimumOriginCenterDistanceM": 16808.3091637195,
+      "minimumCorridorDistanceM": 4638.5887657062,
+      "closestOriginMidpointOffsetMin": 420.0,
+      "scoreSemantics": "INVESTIGATIVE_PRIORITY_NOT_RESPONSIBILITY_PROBABILITY",
+      "calibrationStatus": "CONTROLLED_DEMO_HEURISTIC_NOT_REAL_WORLD_CALIBRATED"
+    }
+  ],
+  "warnings": [
+    "Controlled synthetic Phase 2 attribution fixture; not a real hindcast result."
+  ]
+}

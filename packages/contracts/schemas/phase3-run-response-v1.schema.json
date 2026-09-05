@@ -1,0 +1,219 @@
+{
+  "$defs": {
+    "RankedCandidatePublic": {
+      "additionalProperties": false,
+      "properties": {
+        "rank": {
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "candidateId": {
+          "minLength": 1,
+          "title": "Candidateid",
+          "type": "string"
+        },
+        "investigativePriorityScore": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Investigativepriorityscore",
+          "type": "number"
+        },
+        "originProximityScore": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Originproximityscore",
+          "type": "number"
+        },
+        "originDwellScore": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Origindwellscore",
+          "type": "number"
+        },
+        "releaseTimeAlignmentScore": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Releasetimealignmentscore",
+          "type": "number"
+        },
+        "corridorAlignmentScore": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Corridoralignmentscore",
+          "type": "number"
+        },
+        "behaviourRuleScore": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Behaviourrulescore",
+          "type": "number"
+        },
+        "lstmContinuousScore": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Lstmcontinuousscore",
+          "type": "number"
+        },
+        "darkGapScore": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Darkgapscore",
+          "type": "number"
+        },
+        "enteredOrigin50": {
+          "title": "Enteredorigin50",
+          "type": "boolean"
+        },
+        "enteredOrigin75": {
+          "title": "Enteredorigin75",
+          "type": "boolean"
+        },
+        "enteredOrigin90": {
+          "title": "Enteredorigin90",
+          "type": "boolean"
+        },
+        "minimumOriginCenterDistanceM": {
+          "minimum": 0,
+          "title": "Minimumorigincenterdistancem",
+          "type": "number"
+        },
+        "minimumCorridorDistanceM": {
+          "minimum": 0,
+          "title": "Minimumcorridordistancem",
+          "type": "number"
+        },
+        "closestOriginMidpointOffsetMin": {
+          "minimum": 0,
+          "title": "Closestoriginmidpointoffsetmin",
+          "type": "number"
+        },
+        "scoreSemantics": {
+          "const": "INVESTIGATIVE_PRIORITY_NOT_RESPONSIBILITY_PROBABILITY",
+          "title": "Scoresemantics",
+          "type": "string"
+        },
+        "calibrationStatus": {
+          "minLength": 1,
+          "title": "Calibrationstatus",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rank",
+        "candidateId",
+        "investigativePriorityScore",
+        "originProximityScore",
+        "originDwellScore",
+        "releaseTimeAlignmentScore",
+        "corridorAlignmentScore",
+        "behaviourRuleScore",
+        "lstmContinuousScore",
+        "darkGapScore",
+        "enteredOrigin50",
+        "enteredOrigin75",
+        "enteredOrigin90",
+        "minimumOriginCenterDistanceM",
+        "minimumCorridorDistanceM",
+        "closestOriginMidpointOffsetMin",
+        "scoreSemantics",
+        "calibrationStatus"
+      ],
+      "title": "RankedCandidatePublic",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "const": "completed",
+      "title": "Status",
+      "type": "string"
+    },
+    "caseId": {
+      "minLength": 1,
+      "title": "Caseid",
+      "type": "string"
+    },
+    "phase2RunId": {
+      "minLength": 1,
+      "title": "Phase2Runid",
+      "type": "string"
+    },
+    "modelVersion": {
+      "minLength": 1,
+      "title": "Modelversion",
+      "type": "string"
+    },
+    "outputDirectory": {
+      "minLength": 1,
+      "title": "Outputdirectory",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Files",
+      "type": "array"
+    },
+    "artifactSha256": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Artifactsha256",
+      "type": "object"
+    },
+    "candidateCount": {
+      "minimum": 0,
+      "title": "Candidatecount",
+      "type": "integer"
+    },
+    "scoredWindows": {
+      "minimum": 0,
+      "title": "Scoredwindows",
+      "type": "integer"
+    },
+    "scoreSemantics": {
+      "const": "INVESTIGATIVE_PRIORITY_NOT_RESPONSIBILITY_PROBABILITY",
+      "title": "Scoresemantics",
+      "type": "string"
+    },
+    "calibrationStatus": {
+      "minLength": 1,
+      "title": "Calibrationstatus",
+      "type": "string"
+    },
+    "topCandidates": {
+      "items": {
+        "$ref": "#/$defs/RankedCandidatePublic"
+      },
+      "title": "Topcandidates",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {},
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "status",
+    "caseId",
+    "phase2RunId",
+    "modelVersion",
+    "outputDirectory",
+    "files",
+    "artifactSha256",
+    "candidateCount",
+    "scoredWindows",
+    "scoreSemantics",
+    "calibrationStatus",
+    "topCandidates",
+    "warnings"
+  ],
+  "title": "Phase3RunPublicResponse",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "phase3-run-response-v1.schema.json"
+}

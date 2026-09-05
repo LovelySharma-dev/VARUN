@@ -1,0 +1,264 @@
+{
+  "$defs": {
+    "EvidenceSurface": {
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "EvidenceSurface",
+      "type": "object"
+    },
+    "GeoJSONFeature": {
+      "properties": {
+        "type": {
+          "const": "Feature",
+          "title": "Type",
+          "type": "string"
+        },
+        "geometry": {
+          "additionalProperties": true,
+          "title": "Geometry",
+          "type": "object"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "title": "Properties"
+        }
+      },
+      "required": [
+        "type",
+        "geometry"
+      ],
+      "title": "GeoJSONFeature",
+      "type": "object"
+    },
+    "HindcastCorridor": {
+      "properties": {
+        "geometry": {
+          "additionalProperties": true,
+          "title": "Geometry",
+          "type": "object"
+        },
+        "direction_deg": {
+          "anyOf": [
+            {
+              "exclusiveMaximum": 360,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Direction Deg"
+        },
+        "time_bands": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Time Bands",
+          "type": "array"
+        }
+      },
+      "required": [
+        "geometry"
+      ],
+      "title": "HindcastCorridor",
+      "type": "object"
+    },
+    "OriginContours": {
+      "properties": {
+        "density_50": {
+          "$ref": "#/$defs/GeoJSONFeature"
+        },
+        "density_75": {
+          "$ref": "#/$defs/GeoJSONFeature"
+        },
+        "density_90": {
+          "$ref": "#/$defs/GeoJSONFeature"
+        }
+      },
+      "required": [
+        "density_50",
+        "density_75",
+        "density_90"
+      ],
+      "title": "OriginContours",
+      "type": "object"
+    },
+    "ReleaseWindow": {
+      "properties": {
+        "start_utc": {
+          "format": "date-time",
+          "title": "Start Utc",
+          "type": "string"
+        },
+        "end_utc": {
+          "format": "date-time",
+          "title": "End Utc",
+          "type": "string"
+        },
+        "time_buffer_minutes": {
+          "maximum": 1440,
+          "minimum": 0,
+          "title": "Time Buffer Minutes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start_utc",
+        "end_utc",
+        "time_buffer_minutes"
+      ],
+      "title": "ReleaseWindow",
+      "type": "object"
+    },
+    "SearchRegion": {
+      "properties": {
+        "geometry": {
+          "additionalProperties": true,
+          "title": "Geometry",
+          "type": "object"
+        },
+        "spatial_buffer_m": {
+          "minimum": 0,
+          "title": "Spatial Buffer M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "geometry",
+        "spatial_buffer_m"
+      ],
+      "title": "SearchRegion",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "contract_version": {
+      "const": "phase2-to-phase3-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "case_id": {
+      "minLength": 1,
+      "title": "Case Id",
+      "type": "string"
+    },
+    "phase2_run_id": {
+      "minLength": 1,
+      "title": "Phase2 Run Id",
+      "type": "string"
+    },
+    "detection_time_utc": {
+      "format": "date-time",
+      "title": "Detection Time Utc",
+      "type": "string"
+    },
+    "crs": {
+      "const": "EPSG:4326",
+      "title": "Crs",
+      "type": "string"
+    },
+    "release_window": {
+      "$ref": "#/$defs/ReleaseWindow"
+    },
+    "origin_contours": {
+      "$ref": "#/$defs/OriginContours"
+    },
+    "origin_evidence_surface": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EvidenceSurface"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "search_region": {
+      "$ref": "#/$defs/SearchRegion"
+    },
+    "hindcast_corridor": {
+      "$ref": "#/$defs/HindcastCorridor"
+    },
+    "ranked_origin_regions": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Ranked Origin Regions",
+      "type": "array"
+    },
+    "alternative_modes": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Alternative Modes",
+      "type": "array"
+    },
+    "reconstruction_metrics": {
+      "additionalProperties": true,
+      "title": "Reconstruction Metrics",
+      "type": "object"
+    },
+    "forcing_uncertainty": {
+      "additionalProperties": true,
+      "title": "Forcing Uncertainty",
+      "type": "object"
+    },
+    "dashboard_artifacts": {
+      "additionalProperties": true,
+      "title": "Dashboard Artifacts",
+      "type": "object"
+    },
+    "warnings": {
+      "items": {},
+      "title": "Warnings",
+      "type": "array"
+    },
+    "provenance": {
+      "additionalProperties": true,
+      "title": "Provenance",
+      "type": "object"
+    }
+  },
+  "required": [
+    "contract_version",
+    "case_id",
+    "phase2_run_id",
+    "detection_time_utc",
+    "crs",
+    "release_window",
+    "origin_contours",
+    "search_region",
+    "hindcast_corridor",
+    "provenance"
+  ],
+  "title": "VARUNA Phase 2 to Phase 3 Contract v1",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "phase2-to-phase3-v1.schema.json"
+}

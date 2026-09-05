@@ -10,6 +10,10 @@ from app.inference_v21 import score_ais_csv
 from app.model_registry import load_ais_model_package
 from app.attribution_pipeline import run_phase3_attribution
 from app.artifact_writer import write_phase3_artifacts
+from app.public_contracts import (
+    Phase3RunPublicRequest,
+    Phase3RunPublicResponse,
+)
 app = FastAPI(
     title="VARUN Phase 3 AIS Engine",
     version="0.1.0",
@@ -243,6 +247,26 @@ def run_phase3(request: Phase3RunRequest):
         ) from exc
 
     
+
+
+@app.post(
+    "/v1/phase3/run",
+    response_model=Phase3RunPublicResponse,
+    response_model_by_alias=True,
+)
+def run_phase3_public(
+    request: Phase3RunPublicRequest,
+) -> Phase3RunPublicResponse:
+    """Stable camelCase transport contract for NestJS integration."""
+    legacy_request = Phase3RunRequest(
+        **request.model_dump()
+    )
+    legacy_response = run_phase3(legacy_request)
+
+    return Phase3RunPublicResponse.model_validate(
+        legacy_response
+    )
+
 @app.post("/validate-phase2")
 def validate_phase2(request: Phase2FolderRequest):
     try:
