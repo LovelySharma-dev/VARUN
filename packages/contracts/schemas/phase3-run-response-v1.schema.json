@@ -1,5 +1,87 @@
 {
   "$defs": {
+    "CandidateTrackRefPublic": {
+      "additionalProperties": false,
+      "properties": {
+        "artifactFile": {
+          "const": "candidate_tracks.geojson",
+          "title": "Artifactfile",
+          "type": "string"
+        },
+        "candidateId": {
+          "minLength": 1,
+          "title": "Candidateid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifactFile",
+        "candidateId"
+      ],
+      "title": "CandidateTrackRefPublic",
+      "type": "object"
+    },
+    "ClosestApproachPublic": {
+      "additionalProperties": false,
+      "properties": {
+        "distanceKm": {
+          "minimum": 0,
+          "title": "Distancekm",
+          "type": "number"
+        },
+        "timestampUtc": {
+          "format": "date-time",
+          "title": "Timestamputc",
+          "type": "string"
+        }
+      },
+      "required": [
+        "distanceKm",
+        "timestampUtc"
+      ],
+      "title": "ClosestApproachPublic",
+      "type": "object"
+    },
+    "DataQualityPublic": {
+      "additionalProperties": false,
+      "description": "Descriptive eligibility metadata; never a score-v1 component.",
+      "properties": {
+        "status": {
+          "const": "MODEL_ELIGIBLE",
+          "title": "Status",
+          "type": "string"
+        },
+        "observationCount": {
+          "minimum": 1,
+          "title": "Observationcount",
+          "type": "integer"
+        },
+        "eligibleWindowCount": {
+          "minimum": 1,
+          "title": "Eligiblewindowcount",
+          "type": "integer"
+        },
+        "anomalyWindowCount": {
+          "minimum": 0,
+          "title": "Anomalywindowcount",
+          "type": "integer"
+        },
+        "includedInScoreV1": {
+          "const": false,
+          "title": "Includedinscorev1",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "status",
+        "observationCount",
+        "eligibleWindowCount",
+        "anomalyWindowCount",
+        "includedInScoreV1"
+      ],
+      "title": "DataQualityPublic",
+      "type": "object"
+    },
     "RankedCandidatePublic": {
       "additionalProperties": false,
       "properties": {
@@ -97,6 +179,55 @@
           "minLength": 1,
           "title": "Calibrationstatus",
           "type": "string"
+        },
+        "rankLabel": {
+          "pattern": "^CAND-[0-9]{3,}$",
+          "title": "Ranklabel",
+          "type": "string"
+        },
+        "investigativeScore": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Investigativescore",
+          "type": "number"
+        },
+        "scoreBreakdownPoints": {
+          "$ref": "#/$defs/ScoreBreakdownPointsPublic"
+        },
+        "closestApproach": {
+          "$ref": "#/$defs/ClosestApproachPublic"
+        },
+        "candidateTrackRef": {
+          "$ref": "#/$defs/CandidateTrackRefPublic"
+        },
+        "dataQuality": {
+          "$ref": "#/$defs/DataQualityPublic"
+        },
+        "supportingEvidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supportingevidence",
+          "type": "array"
+        },
+        "negativeEvidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Negativeevidence",
+          "type": "array"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "legalDisclaimer": {
+          "const": "Candidate ranking supports investigation and does not constitute legal attribution or proof of responsibility.",
+          "title": "Legaldisclaimer",
+          "type": "string"
         }
       },
       "required": [
@@ -117,9 +248,78 @@
         "minimumCorridorDistanceM",
         "closestOriginMidpointOffsetMin",
         "scoreSemantics",
-        "calibrationStatus"
+        "calibrationStatus",
+        "rankLabel",
+        "investigativeScore",
+        "scoreBreakdownPoints",
+        "closestApproach",
+        "candidateTrackRef",
+        "dataQuality",
+        "supportingEvidence",
+        "negativeEvidence",
+        "warnings",
+        "legalDisclaimer"
       ],
       "title": "RankedCandidatePublic",
+      "type": "object"
+    },
+    "ScoreBreakdownPointsPublic": {
+      "additionalProperties": false,
+      "description": "Weighted score-v1 contributions expressed on a 0-100 scale.",
+      "properties": {
+        "originProximity": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Originproximity",
+          "type": "number"
+        },
+        "originDwell": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Origindwell",
+          "type": "number"
+        },
+        "releaseTimeAlignment": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Releasetimealignment",
+          "type": "number"
+        },
+        "corridorAlignment": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Corridoralignment",
+          "type": "number"
+        },
+        "behaviourRules": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Behaviourrules",
+          "type": "number"
+        },
+        "lstmAnomaly": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Lstmanomaly",
+          "type": "number"
+        },
+        "darkGap": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Darkgap",
+          "type": "number"
+        }
+      },
+      "required": [
+        "originProximity",
+        "originDwell",
+        "releaseTimeAlignment",
+        "corridorAlignment",
+        "behaviourRules",
+        "lstmAnomaly",
+        "darkGap"
+      ],
+      "title": "ScoreBreakdownPointsPublic",
       "type": "object"
     }
   },

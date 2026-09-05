@@ -10,6 +10,7 @@ from app.inference_v21 import score_ais_csv
 from app.model_registry import load_ais_model_package
 from app.attribution_pipeline import run_phase3_attribution
 from app.artifact_writer import write_phase3_artifacts
+from app.dashboard_projection import project_dashboard_candidates
 from app.public_contracts import (
     Phase3RunPublicRequest,
     Phase3RunPublicResponse,
@@ -257,15 +258,64 @@ def run_phase3(request: Phase3RunRequest):
 def run_phase3_public(
     request: Phase3RunPublicRequest,
 ) -> Phase3RunPublicResponse:
-    """Stable camelCase transport contract for NestJS integration."""
-    legacy_request = Phase3RunRequest(
-        **request.model_dump()
-    )
-    legacy_response = run_phase3(legacy_request)
+    """Stable additive dashboard contract for NestJS integration."""
+    try:
+        result = run_phase3_attribution(
+            request.phase2_folder,
+            request.ais_csv_path,
+            window_stride=request.window_stride,
+            batch_size=request.batch_size,
+        )
 
-    return Phase3RunPublicResponse.model_validate(
-        legacy_response
-    )
+        artifacts = write_phase3_artifacts(
+            result,
+            request.output_directory,
+        )
+
+        response_payload = {
+            "status": "completed",
+            "case_id": result.contract.case_id,
+            "phase2_run_id": result.contract.phase2_run_id,
+            "model_version": result.model_package.metadata[
+                "model_version"
+            ],
+            "output_directory": artifacts["output_directory"],
+            "files": artifacts["files"],
+            "artifact_sha256": artifacts["artifact_sha256"],
+            "candidate_count": result.ranking.audit[
+                "candidate_count"
+            ],
+            "scored_windows": result.inference_audit[
+                "scored_windows"
+            ],
+            "score_semantics": result.ranking.audit[
+                "score_semantics"
+            ],
+            "calibration_status": result.ranking.audit[
+                "normalization"
+            ]["calibration_status"],
+            "top_candidates": project_dashboard_candidates(
+                result,
+                top_candidates=request.top_candidates,
+            ),
+            "warnings": result.contract.warnings,
+        }
+
+        return Phase3RunPublicResponse.model_validate(
+            response_payload
+        )
+
+    except (
+        FileExistsError,
+        FileNotFoundError,
+        NotADirectoryError,
+        ValueError,
+        KeyError,
+    ) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
 
 @app.post("/validate-phase2")
 def validate_phase2(request: Phase2FolderRequest):

@@ -25,62 +25,184 @@
     {
       "rank": 1,
       "candidateId": "candidate-68f8b1f0ac34",
-      "investigativePriorityScore": 0.8721806411,
-      "originProximityScore": 0.8458988945,
+      "investigativePriorityScore": 0.8721806410674144,
+      "originProximityScore": 0.8458988945048611,
       "originDwellScore": 1.0,
-      "releaseTimeAlignmentScore": 0.8464817249,
-      "corridorAlignmentScore": 0.9998459292,
+      "releaseTimeAlignmentScore": 0.8464817248906141,
+      "corridorAlignmentScore": 0.9998459291705615,
       "behaviourRuleScore": 1.0,
-      "lstmContinuousScore": 0.6751353866,
+      "lstmContinuousScore": 0.6751353866404571,
       "darkGapScore": 0.0,
       "enteredOrigin50": true,
       "enteredOrigin75": true,
       "enteredOrigin90": true,
-      "minimumOriginCenterDistanceM": 836.7771827967,
-      "minimumCorridorDistanceM": 0.7704134978,
+      "minimumOriginCenterDistanceM": 836.7771827967155,
+      "minimumCorridorDistanceM": 0.7704134978399054,
       "closestOriginMidpointOffsetMin": 60.0,
       "scoreSemantics": "INVESTIGATIVE_PRIORITY_NOT_RESPONSIBILITY_PROBABILITY",
-      "calibrationStatus": "CONTROLLED_DEMO_HEURISTIC_NOT_REAL_WORLD_CALIBRATED"
+      "calibrationStatus": "CONTROLLED_DEMO_HEURISTIC_NOT_REAL_WORLD_CALIBRATED",
+      "rankLabel": "CAND-001",
+      "investigativeScore": 87.21806410674145,
+      "scoreBreakdownPoints": {
+        "originProximity": 21.147472362621528,
+        "originDwell": 15.0,
+        "releaseTimeAlignment": 12.69722587335921,
+        "corridorAlignment": 14.99768893755842,
+        "behaviourRules": 20.0,
+        "lstmAnomaly": 3.375676933202286,
+        "darkGap": 0.0
+      },
+      "closestApproach": {
+        "distanceKm": 0.8367771827967154,
+        "timestampUtc": "2026-08-19T12:30:00Z"
+      },
+      "candidateTrackRef": {
+        "artifactFile": "candidate_tracks.geojson",
+        "candidateId": "candidate-68f8b1f0ac34"
+      },
+      "dataQuality": {
+        "status": "MODEL_ELIGIBLE",
+        "observationCount": 169,
+        "eligibleWindowCount": 80,
+        "anomalyWindowCount": 0,
+        "includedInScoreV1": false
+      },
+      "supportingEvidence": [
+        "Track entered the highest-density origin evidence contour.",
+        "Track was spatially aligned with the hindcast corridor.",
+        "Closest origin approach aligned with the release-time scale.",
+        "Loitering-transition rule matched.",
+        "Abrupt-turn rule matched.",
+        "Sudden-speed-drop rule matched."
+      ],
+      "negativeEvidence": [
+        "No window exceeded the frozen LSTM threshold.",
+        "No AIS dark-gap event was detected."
+      ],
+      "warnings": [
+        "Some candidate observations fall outside the release window."
+      ],
+      "legalDisclaimer": "Candidate ranking supports investigation and does not constitute legal attribution or proof of responsibility."
     },
     {
       "rank": 2,
       "candidateId": "candidate-7669d2a91e2d",
-      "investigativePriorityScore": 0.6307190116,
-      "originProximityScore": 0.9240589025,
-      "originDwellScore": 0.4583333333,
-      "releaseTimeAlignmentScore": 0.9862071167,
-      "corridorAlignmentScore": 0.9986403946,
+      "investigativePriorityScore": 0.6307190115705027,
+      "originProximityScore": 0.924058902472185,
+      "originDwellScore": 0.4583333333333333,
+      "releaseTimeAlignmentScore": 0.9862071167439163,
+      "corridorAlignmentScore": 0.9986403946057296,
       "behaviourRuleScore": 0.0,
-      "lstmContinuousScore": 0.664543185,
+      "lstmContinuousScore": 0.6645431850001904,
       "darkGapScore": 0.0,
       "enteredOrigin50": true,
       "enteredOrigin75": true,
       "enteredOrigin90": true,
-      "minimumOriginCenterDistanceM": 394.8973105398,
-      "minimumCorridorDistanceM": 6.8026524815,
+      "minimumOriginCenterDistanceM": 394.89731053976936,
+      "minimumCorridorDistanceM": 6.802652481476649,
       "closestOriginMidpointOffsetMin": 5.0,
       "scoreSemantics": "INVESTIGATIVE_PRIORITY_NOT_RESPONSIBILITY_PROBABILITY",
-      "calibrationStatus": "CONTROLLED_DEMO_HEURISTIC_NOT_REAL_WORLD_CALIBRATED"
+      "calibrationStatus": "CONTROLLED_DEMO_HEURISTIC_NOT_REAL_WORLD_CALIBRATED",
+      "rankLabel": "CAND-002",
+      "investigativeScore": 63.07190115705027,
+      "scoreBreakdownPoints": {
+        "originProximity": 23.101472561804627,
+        "originDwell": 6.874999999999999,
+        "releaseTimeAlignment": 14.793106751158744,
+        "corridorAlignment": 14.979605919085945,
+        "behaviourRules": 0.0,
+        "lstmAnomaly": 3.322715925000952,
+        "darkGap": 0.0
+      },
+      "closestApproach": {
+        "distanceKm": 0.39489731053976934,
+        "timestampUtc": "2026-08-19T11:35:00Z"
+      },
+      "candidateTrackRef": {
+        "artifactFile": "candidate_tracks.geojson",
+        "candidateId": "candidate-7669d2a91e2d"
+      },
+      "dataQuality": {
+        "status": "MODEL_ELIGIBLE",
+        "observationCount": 169,
+        "eligibleWindowCount": 80,
+        "anomalyWindowCount": 0,
+        "includedInScoreV1": false
+      },
+      "supportingEvidence": [
+        "Track entered the highest-density origin evidence contour.",
+        "Track was spatially aligned with the hindcast corridor.",
+        "Closest origin approach aligned with the release-time scale."
+      ],
+      "negativeEvidence": [
+        "No configured behaviour rule matched.",
+        "No window exceeded the frozen LSTM threshold.",
+        "No AIS dark-gap event was detected."
+      ],
+      "warnings": [
+        "Some candidate observations fall outside the release window."
+      ],
+      "legalDisclaimer": "Candidate ranking supports investigation and does not constitute legal attribution or proof of responsibility."
     },
     {
       "rank": 3,
       "candidateId": "candidate-8fcff6b97422",
-      "investigativePriorityScore": 0.1484769382,
-      "originProximityScore": 0.0346775827,
+      "investigativePriorityScore": 0.14847693819325386,
+      "originProximityScore": 0.03467758269147287,
       "originDwellScore": 0.0,
-      "releaseTimeAlignmentScore": 0.3114032239,
-      "corridorAlignmentScore": 0.3954552077,
+      "releaseTimeAlignmentScore": 0.3114032239145977,
+      "corridorAlignmentScore": 0.3954552076660937,
       "behaviourRuleScore": 0.0,
-      "lstmContinuousScore": 0.6755755557,
+      "lstmContinuousScore": 0.6755755556656391,
       "darkGapScore": 0.0,
       "enteredOrigin50": false,
       "enteredOrigin75": false,
       "enteredOrigin90": false,
-      "minimumOriginCenterDistanceM": 16808.3091637195,
-      "minimumCorridorDistanceM": 4638.5887657062,
+      "minimumOriginCenterDistanceM": 16808.309163719536,
+      "minimumCorridorDistanceM": 4638.5887657062085,
       "closestOriginMidpointOffsetMin": 420.0,
       "scoreSemantics": "INVESTIGATIVE_PRIORITY_NOT_RESPONSIBILITY_PROBABILITY",
-      "calibrationStatus": "CONTROLLED_DEMO_HEURISTIC_NOT_REAL_WORLD_CALIBRATED"
+      "calibrationStatus": "CONTROLLED_DEMO_HEURISTIC_NOT_REAL_WORLD_CALIBRATED",
+      "rankLabel": "CAND-003",
+      "investigativeScore": 14.847693819325386,
+      "scoreBreakdownPoints": {
+        "originProximity": 0.8669395672868218,
+        "originDwell": 0.0,
+        "releaseTimeAlignment": 4.671048358718965,
+        "corridorAlignment": 5.931828114991405,
+        "behaviourRules": 0.0,
+        "lstmAnomaly": 3.3778777783281955,
+        "darkGap": 0.0
+      },
+      "closestApproach": {
+        "distanceKm": 16.808309163719535,
+        "timestampUtc": "2026-08-19T18:30:00Z"
+      },
+      "candidateTrackRef": {
+        "artifactFile": "candidate_tracks.geojson",
+        "candidateId": "candidate-8fcff6b97422"
+      },
+      "dataQuality": {
+        "status": "MODEL_ELIGIBLE",
+        "observationCount": 169,
+        "eligibleWindowCount": 80,
+        "anomalyWindowCount": 0,
+        "includedInScoreV1": false
+      },
+      "supportingEvidence": [
+        "Track was spatially aligned with the hindcast corridor."
+      ],
+      "negativeEvidence": [
+        "Track did not enter any supplied origin evidence contour.",
+        "Closest origin approach was outside the release-time scale.",
+        "No configured behaviour rule matched.",
+        "No window exceeded the frozen LSTM threshold.",
+        "No AIS dark-gap event was detected."
+      ],
+      "warnings": [
+        "Some candidate observations fall outside the release window."
+      ],
+      "legalDisclaimer": "Candidate ranking supports investigation and does not constitute legal attribution or proof of responsibility."
     }
   ],
   "warnings": [
