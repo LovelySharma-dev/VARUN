@@ -75,3 +75,4 @@ Thumbs.db
 *.log
 *.backup
 repo-tree.txt
+artifacts/reproducibility/

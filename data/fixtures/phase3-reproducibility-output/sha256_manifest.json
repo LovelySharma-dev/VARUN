@@ -1,0 +1,19 @@
+﻿{
+    "schema_version":  "phase3-artifact-hashes-v1",
+    "model_version":  "ais-lstm-ae-v2.1",
+    "score_version":  "score-v1",
+    "phase2_input":  "data/fixtures/phase2-attribution-demo",
+    "ais_input":  "data/fixtures/ais-phase2-aligned/ais_input.csv",
+    "candidate_count":  3,
+    "scored_windows":  240,
+    "deterministic_replay_passed":  true,
+    "ground_truth_supplied_to_pipeline":  false,
+    "public_mmsi_exposure":  false,
+    "artifact_sha256":  {
+                            "ranked_candidates.json":  "374c0b81eae4091b41b34ecd660f5f608f64f49dd05db90d2b84ff9d4adfcb1a",
+                            "candidate_features.csv":  "ab9756a8208eafcd3aa2c28976d16c72d57a03a9569a9146e4c9a0ead32021b6",
+                            "candidate_tracks.geojson":  "e30e7360d16498c4907affe4086975e537ec96be146c091b6831582cd2ce4b17",
+                            "dark_gap_events.json":  "c0fa38add2c15cc375b23f38b829cd77bb6886ba95f7734a82a2d4166eb136a1",
+                            "phase3_summary.json":  "0eecfdcad9149174ad16bbee109dd5d01f76ad830b7b9ba61b315a6a32d6643f"
+                        }
+}
