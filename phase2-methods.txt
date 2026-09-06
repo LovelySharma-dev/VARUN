@@ -1,0 +1,224 @@
+  async getRun(
+    caseId: string,
+    runId: string,
+  ) {
+    const run =
+      await this.prisma.analysisRun.findUnique({
+        where: {
+          id: runId,
+        },
+      });
+
+    if (!run || run.caseId !== caseId) {
+      throw new NotFoundException({
+        error: {
+          code: 'PHASE2_RUN_NOT_FOUND',
+          message:
+            'Phase-2 run not found.',
+          retryable: false,
+        },
+      });
+    }
+
+    return {
+      runId: run.id,
+      caseId: run.caseId,
+      sceneId: run.sceneId,
+      phase: run.phase,
+      status: run.status,
+      dataOrigin: run.dataOrigin,
+      inputContractVersion:
+        run.inputContractVersion,
+      outputContractVersion:
+        run.outputContractVersion,
+      createdAt:
+        run.createdAt.toISOString(),
+      startedAt:
+        run.startedAt?.toISOString() ??
+        null,
+      finishedAt:
+        run.finishedAt?.toISOString() ??
+        null,
+      provenance:
+        run.provenance,
+    };
+  }
+
+  async getStatus(
+    caseId: string,
+    runId: string,
+  ) {
+    const run =
+      await this.prisma.analysisRun.findUnique({
+        where: {
+          id: runId,
+        },
+      });
+
+    if (!run || run.caseId !== caseId) {
+      throw new NotFoundException({
+        error: {
+          code: 'PHASE2_RUN_NOT_FOUND',
+          message:
+            'Phase-2 run not found.',
+          retryable: false,
+        },
+      });
+    }
+
+    const latest =
+      await this.prisma.runEvent.findFirst({
+        where: {
+          analysisRunId: runId,
+        },
+        orderBy: {
+          occurredAt: 'desc',
+        },
+      });
+
+    const progress =
+      latest?.progressPercent == null
+        ? run.status ===
+            'COMPLETED' ||
+          run.status ===
+            'COMPLETED_WITH_WARNINGS'
+          ? 100
+          : run.status ===
+              'PROCESSING'
+            ? 25
+            : 0
+        : Number(
+            latest.progressPercent,
+          );
+
+    return {
+      runId,
+      phase: 'PHASE2',
+      status: run.status,
+      progressPercentage:
+        progress,
+      message:
+        latest?.safeMessage ??
+        'Phase-2 drift run queued.',
+      error: null,
+    };
+  }
+
+  async getResult(
+    caseId: string,
+    runId: string,
+  ) {
+    const run =
+      await this.prisma.analysisRun.findUnique({
+        where: {
+          id: runId,
+        },
+      });
+
+    if (!run || run.caseId !== caseId) {
+      throw new NotFoundException({
+        error: {
+          code: 'PHASE2_RUN_NOT_FOUND',
+          message:
+            'Phase-2 run not found.',
+          retryable: false,
+        },
+      });
+    }
+
+    if (
+      ![
+        'COMPLETED',
+        'COMPLETED_WITH_WARNINGS',
+      ].includes(run.status)
+    ) {
+      throw new BadRequestException({
+        error: {
+          code:
+            'PHASE2_RESULT_NOT_READY',
+          message:
+            'Phase-2 result is not ready.',
+          retryable: true,
+        },
+      });
+    }
+
+    const provenance =
+      run.provenance &&
+      typeof run.provenance ===
+        'object' &&
+      !Array.isArray(
+        run.provenance,
+      )
+        ? run.provenance as Record<
+            string,
+            unknown
+          >
+        : {};
+
+    const artifacts =
+      await this.prisma.artifact.findMany({
+        where: {
+          analysisRunId: runId,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+    return {
+      runId,
+      caseId,
+      phase: 'PHASE2',
+      status: run.status,
+      dataOrigin:
+        run.dataOrigin,
+      contractVersion:
+        run.outputContractVersion,
+      forcing:
+        provenance.forcing ?? {},
+      seeding:
+        provenance.seeding ?? {},
+      hindcast:
+        provenance.hindcast ?? {},
+      reconstruction:
+        provenance.reconstruction ??
+        {},
+      forecast:
+        provenance.forecast ?? {},
+      trajectories:
+        provenance.trajectories ??
+        [],
+      artifacts:
+        artifacts.map(
+          (artifact) => ({
+            artifactId:
+              artifact.id,
+            logicalName:
+              artifact.logicalName,
+            artifactVersion:
+              artifact.artifactVersion,
+            mediaType:
+              artifact.mediaType,
+            checksumSha256:
+              artifact.checksumSha256,
+            sizeBytes:
+              artifact.sizeBytes ==
+              null
+                ? null
+                : artifact.sizeBytes.toString(),
+            publicUrl:
+              `/api/v1/artifacts/${artifact.id}`,
+            metadata:
+              artifact.metadata,
+          }),
+        ),
+      provenance,
+      warnings:
+        Array.isArray(
+          provenance.warnings,
+        )
+          ? provenance.warnings
+          : [],
+    };
+  }
