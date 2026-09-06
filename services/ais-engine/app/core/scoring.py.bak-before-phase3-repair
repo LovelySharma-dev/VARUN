@@ -1,0 +1,72 @@
+﻿from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+
+@dataclass(frozen=True)
+class ScoreWeights:
+    origin_proximity: float = 30.0
+    time_overlap: float = 25.0
+    corridor_trajectory: float = 20.0
+    behaviour: float = 10.0
+    ais_gap: float = 5.0
+    data_quality: float = 10.0
+    negative_evidence_penalty: float = 4.0
+
+
+DEFAULT_WEIGHTS = ScoreWeights()
+
+
+def clamp01(value: float) -> float:
+    return max(0.0, min(1.0, float(value)))
+
+
+def calculate_score(
+    *,
+    origin_proximity: float,
+    time_overlap: float,
+    corridor_trajectory: float,
+    behaviour: float,
+    ais_gap: float,
+    data_quality: float,
+    negative_evidence: float = 0.0,
+    weights: ScoreWeights = DEFAULT_WEIGHTS,
+) -> dict[str, Any]:
+
+    components = {
+        "originProximity": round(clamp01(origin_proximity), 6),
+        "timeOverlap": round(clamp01(time_overlap), 6),
+        "corridorTrajectory": round(clamp01(corridor_trajectory), 6),
+        "behaviour": round(clamp01(behaviour), 6),
+        "aisGap": round(clamp01(ais_gap), 6),
+        "dataQuality": round(clamp01(data_quality), 6),
+    }
+
+    positive_score = (
+        components["originProximity"] * weights.origin_proximity
+        + components["timeOverlap"] * weights.time_overlap
+        + components["corridorTrajectory"] * weights.corridor_trajectory
+        + components["behaviour"] * weights.behaviour
+        + components["aisGap"] * weights.ais_gap
+        + components["dataQuality"] * weights.data_quality
+    )
+
+    penalty = clamp01(negative_evidence) * weights.negative_evidence_penalty
+
+    final_score = max(0.0, positive_score - penalty)
+
+    confidence = (
+        0.45 * components["dataQuality"]
+        + 0.25 * components["aisGap"]
+        + 0.15 * components["timeOverlap"]
+        + 0.15 * components["originProximity"]
+    )
+
+    return {
+        "scoreVersion": "score-v1",
+        "score": round(final_score, 6),
+        "confidence": round(clamp01(confidence), 6),
+        "negativeEvidencePenalty": round(penalty, 6),
+        "components": components,
+    }

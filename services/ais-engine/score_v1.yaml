@@ -1,0 +1,10 @@
+﻿proximity: 30
+time_overlap: 25
+corridor_overlap: 20
+behaviour: 10
+ais_gap: 5
+data_quality: 10
+
+method: explainable-score-v1
+
+interpretation: investigative-score

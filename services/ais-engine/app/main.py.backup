@@ -1,0 +1,346 @@
+﻿from datetime import datetime, timezone
+from typing import Any
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
+from app.features import AISPoint, extract_features, interpolate_track
+
+
+app = FastAPI(
+    title="VARUN Phase 3 AIS",
+    version="1.0.0",
+)
+
+
+class AISInput(BaseModel):
+    timestampUtc: datetime
+    latitude: float
+    longitude: float
+    sogKnots: float | None = None
+    cogDegrees: float | None = None
+
+
+class CandidateInput(BaseModel):
+    candidateId: str
+    points: list[AISInput] = Field(min_length=1)
+    corridorOverlap: float = 0.0
+
+
+class AnalysisRequest(BaseModel):
+    contract_version: str
+    case_id: str
+    phase2_run_id: str
+    phase3_run_id: str
+
+    originLatitude: float
+    originLongitude: float
+    originTimeStart: datetime
+    originTimeEnd: datetime
+
+    searchBufferKm: float = 20.0
+    candidates: list[CandidateInput] = Field(default_factory=list)
+
+
+def utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def score_candidate(features: dict[str, Any]) -> dict[str, Any]:
+    proximity = float(features.get("originProximity", 0.0))
+    time_overlap = float(features.get("timeOverlap", 0.0))
+    corridor = float(features.get("corridorOverlap", 0.0))
+    behaviour = float(features.get("speedBehaviour", 0.0))
+    coverage = float(features.get("trackCoverage", 0.0))
+    max_gap = float(features.get("maximumGapMinutes", 0.0))
+    quality = float(features.get("dataQuality", 0.0))
+
+    # score-v1:
+    # origin proximity 30
+    # time overlap 25
+    # corridor/trajectory 20
+    # behaviour 10
+    # AIS gap 5
+    # data quality 10
+    #
+    # Behaviour anomaly is NOT treated as guilt evidence.
+    # AIS gap receives a positive evidence score only when coverage
+    # supports a reliable observation; missing data is not suspicious.
+
+    proximity_c = proximity * 30.0
+    time_c = time_overlap * 25.0
+    corridor_c = corridor * 20.0
+
+    # Convert behaviour magnitude into a bounded contribution.
+    # This is an investigative behaviour signal, not probability.
+    behaviour_c = behaviour * 10.0
+
+    if max_gap <= 5:
+        gap_norm = 1.0
+    elif max_gap <= 15:
+        gap_norm = 0.8
+    elif max_gap <= 30:
+        gap_norm = 0.5
+    else:
+        gap_norm = 0.2
+
+    gap_c = gap_norm * 5.0
+    quality_c = quality * 10.0
+
+    negative = 0.0
+    negative_reasons: list[str] = []
+
+    if proximity <= 0.0:
+        negative += 4.0
+        negative_reasons.append(
+            "Minimum origin proximity is outside the configured range."
+        )
+
+    if time_overlap <= 0.0:
+        negative += 4.0
+        negative_reasons.append(
+            "Candidate track does not overlap the release-time window."
+        )
+
+    if corridor <= 0.0:
+        negative += 2.0
+        negative_reasons.append(
+            "Track does not intersect the available hindcast corridor."
+        )
+
+    positive = (
+        proximity_c
+        + time_c
+        + corridor_c
+        + behaviour_c
+        + gap_c
+        + quality_c
+    )
+
+    total = max(0.0, min(100.0, positive - negative))
+
+    return {
+        "scoreVersion": "score-v1",
+        "investigativeScore": round(total, 2),
+        "positiveTotal": round(positive, 2),
+        "negativeTotal": round(negative, 2),
+        "components": [
+            {
+                "componentName": "ORIGIN_PROXIMITY",
+                "rawValue": features.get("minimumOriginDistanceKm"),
+                "normalizedValue": round(proximity, 6),
+                "weight": 30,
+                "contribution": round(proximity_c, 2),
+                "isDeduction": False,
+            },
+            {
+                "componentName": "TIME_OVERLAP",
+                "rawValue": features.get("timeOverlap"),
+                "normalizedValue": round(time_overlap, 6),
+                "weight": 25,
+                "contribution": round(time_c, 2),
+                "isDeduction": False,
+            },
+            {
+                "componentName": "CORRIDOR_MATCH",
+                "rawValue": features.get("corridorOverlap"),
+                "normalizedValue": round(corridor, 6),
+                "weight": 20,
+                "contribution": round(corridor_c, 2),
+                "isDeduction": False,
+            },
+            {
+                "componentName": "BEHAVIOUR",
+                "rawValue": features.get("speedBehaviour"),
+                "normalizedValue": round(behaviour, 6),
+                "weight": 10,
+                "contribution": round(behaviour_c, 2),
+                "isDeduction": False,
+            },
+            {
+                "componentName": "AIS_GAP",
+                "rawValue": features.get("maximumGapMinutes"),
+                "normalizedValue": round(gap_norm, 6),
+                "weight": 5,
+                "contribution": round(gap_c, 2),
+                "isDeduction": False,
+            },
+            {
+                "componentName": "DATA_QUALITY",
+                "rawValue": features.get("dataQuality"),
+                "normalizedValue": round(quality, 6),
+                "weight": 10,
+                "contribution": round(quality_c, 2),
+                "isDeduction": False,
+            },
+        ],
+        "negativeEvidence": negative_reasons,
+    }
+
+
+def evidence_for(
+    candidate_id: str,
+    features: dict[str, Any],
+    score: dict[str, Any],
+) -> tuple[list[str], list[str]]:
+    evidence: list[str] = []
+    warnings: list[str] = []
+
+    distance = features.get("minimumOriginDistanceKm")
+    if distance is not None:
+        evidence.append(
+            f"Track minimum distance from origin region: {distance} km."
+        )
+
+    if features.get("timeOverlap", 0) > 0:
+        evidence.append(
+            "Candidate track overlaps the Phase-2 release-time window."
+        )
+
+    if features.get("corridorOverlap", 0) > 0:
+        evidence.append(
+            "Candidate track overlaps the available hindcast corridor."
+        )
+
+    evidence.append(
+        f"{features.get('observationCount', 0)} valid AIS observations were used."
+    )
+
+    gap = float(features.get("maximumGapMinutes", 0.0))
+    if gap > 30:
+        warnings.append(
+            f"A {gap:.1f}-minute AIS reporting gap was observed; "
+            "the available data does not establish its cause."
+        )
+
+    if features.get("dataQuality", 0) < 0.5:
+        warnings.append(
+            "AIS data quality is limited; investigative confidence should be reduced."
+        )
+
+    warnings.append(
+        "Investigative relevance score is not a guilt probability or legal determination."
+    )
+
+    return evidence, warnings
+
+
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "service": "phase3-ais",
+        "version": "1.0.0",
+    }
+
+
+@app.post("/internal/v1/analysis-runs")
+def analyse(request: AnalysisRequest):
+    if request.contract_version != "phase2-to-phase3-v1":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "INVALID_PHASE2_CONTRACT",
+                "message": "Expected phase2-to-phase3-v1.",
+            },
+        )
+
+    if not request.candidates:
+        return {
+            "status": "COMPLETED",
+            "caseId": request.case_id,
+            "runId": request.phase3_run_id,
+            "phase": "PHASE3",
+            "dataOrigin": "SYNTHETIC",
+            "rankingMethod": "explainable-score-v1",
+            "candidates": [],
+            "warnings": ["NO_CANDIDATES_FOUND"],
+            "disclaimer": (
+                "Candidate ranking supports investigation and does not "
+                "constitute legal attribution or proof of responsibility."
+            ),
+        }
+
+    results: list[dict[str, Any]] = []
+
+    for candidate in request.candidates:
+        points = [
+            AISPoint(
+                timestamp_utc=utc(p.timestampUtc),
+                latitude=p.latitude,
+                longitude=p.longitude,
+                sog_knots=p.sogKnots,
+                cog_degrees=p.cogDegrees,
+            )
+            for p in candidate.points
+        ]
+
+        features = extract_features(
+            points=points,
+            origin_latitude=request.originLatitude,
+            origin_longitude=request.originLongitude,
+            origin_time_start=utc(request.originTimeStart),
+            origin_time_end=utc(request.originTimeEnd),
+            corridor_overlap=candidate.corridorOverlap,
+        )
+
+        score = score_candidate(features)
+        evidence, warnings = evidence_for(
+            candidate.candidateId,
+            features,
+            score,
+        )
+
+        track = interpolate_track(points)
+
+        results.append(
+            {
+                "candidateId": candidate.candidateId,
+                "score": score,
+                "features": features,
+                "evidence": evidence,
+                "warnings": warnings,
+                "track": {
+                    "type": "Feature",
+                    "properties": {
+                        "candidateId": candidate.candidateId,
+                        "segments": track,
+                    },
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [
+                            [item["longitude"], item["latitude"]]
+                            for item in track
+                        ],
+                    },
+                },
+            }
+        )
+
+    results.sort(
+        key=lambda item: (
+            -item["score"]["investigativeScore"],
+            item["candidateId"],
+        )
+    )
+
+    top3 = results[:3]
+
+    for rank, result in enumerate(top3, start=1):
+        result["rank"] = rank
+
+    return {
+        "status": "COMPLETED",
+        "caseId": request.case_id,
+        "runId": request.phase3_run_id,
+        "phase": "PHASE3",
+        "dataOrigin": "SYNTHETIC",
+        "rankingMethod": "explainable-score-v1",
+        "candidateCount": len(results),
+        "candidates": top3,
+        "disclaimer": (
+            "Candidate ranking supports investigation and does not "
+            "constitute legal attribution or proof of responsibility."
+        ),
+    }

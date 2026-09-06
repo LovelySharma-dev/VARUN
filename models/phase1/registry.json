@@ -1,0 +1,29 @@
+﻿{
+  "activeProductionModel": "unet-oil-spill-v0.1",
+  "allowedStages": [
+    "EXPERIMENTAL",
+    "VALIDATED",
+    "APPROVED",
+    "PRODUCTION"
+  ],
+  "models": [
+    {
+      "modelVersionId": "unet-oil-spill-v0.1",
+      "modelName": "VARUN U-Net Oil Spill",
+      "semanticVersion": "0.1.0",
+      "stage": "PRODUCTION",
+      "architecture": "U-Net",
+      "framework": "PyTorch",
+      "inputProfile": "sar-2ch-f32",
+      "preprocessingVersion": "sar-percentile-v1",
+      "thresholdVersion": "binary-threshold-v1",
+      "thresholdValue": 0.5,
+      "minAreaPixels": 20,
+      "weights": "models/phase1/unet_oil_spill_v0.1.pth",
+      "checksumSha256": "f832e1db92a9180c71b912d65b654aede0cd729d9d8626b2069bccb503d05bd3",
+      "evaluationSummary": {
+        "status": "baseline-integration"
+      }
+    }
+  ]
+}
