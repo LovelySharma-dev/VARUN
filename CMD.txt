@@ -17,3 +17,18 @@ pnpm dev
 
 # 6. Run Offline Demo
 pnpm demo:offline
+
+# 7. Run Phase 1 Model Inference (Oil Spill Detection)
+1st Install libraries
+pip install torch torchvision rasterio numpy matplotlib
+
+# Option A: Batch script (CMD / PowerShell)
+.\run_model.ps1 -image data/sample_sar_image.tif -output output_mask.tif
+
+# Option B: Direct pnpm / python command
+pnpm infer:phase1 --image <path_to_image.tif> --output output_mask.tif
+# or
+python ml/phase1/infer.py --image <path_to_image.tif> --model models/phase1/unet_oil_spill_v0.1.pth --output output_mask.tif
+
+# 8. Run test of model
+python -m pytest ml/phase1/tests/ -v

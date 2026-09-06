@@ -9,6 +9,8 @@
     "lint": "turbo run lint",
     "train:phase1": "uv run --directory ml/phase1/training python -m src.train",
     "evaluate:phase1": "uv run --directory ml/phase1/evaluation python evaluate_locked_test.py",
+    "infer:phase1": "python ml/phase1/infer.py",
+    "test:phase1": "python -m pytest ml/phase1/tests/",
     "demo:offline": "powershell -ExecutionPolicy Bypass -File scripts/demo-offline.ps1"
   },
   "devDependencies": {

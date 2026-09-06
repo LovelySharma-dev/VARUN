@@ -56,6 +56,14 @@ ml/phase1/experiments/*/outputs/
 *.h5
 *.hdf5
 
+# Temporary & Generated Outputs / Scratch
+output_*.tif
+output_*.png
+*_overlay.png
+scratch*.py
+data/sample_*.tif
+scratch/
+
 # Keep specific fixture and demo tracking files
 !data/fixtures/**
 !data/offline-demo/**
