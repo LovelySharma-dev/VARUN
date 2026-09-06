@@ -1,0 +1,28 @@
+[
+  {
+    "caseId": "CASE-S1-DEMO-001",
+    "title": "Arabian Sea Offshore Slick Incident",
+    "region": "Bombay High Sector 4 (18.9214° N, 72.8347° E)",
+    "detectionTimestamp": "2026-09-05T08:30:00Z",
+    "overallStatus": "COMPLETED",
+    "phase1Status": "COMPLETED",
+    "phase2Status": "COMPLETED",
+    "phase3Status": "COMPLETED",
+    "lastUpdated": "2026-09-05T10:15:00Z",
+    "offlineReplayAvailable": true,
+    "warnings": ["Moderate wind speed (12 knots) on northern boundary"]
+  },
+  {
+    "caseId": "CASE-S2-DEMO-002",
+    "title": "Gujarat Gulf of Kutch Drift Analysis",
+    "region": "Gulf of Kutch Sector 2 (22.4500° N, 69.1200° E)",
+    "detectionTimestamp": "2026-09-04T14:20:00Z",
+    "overallStatus": "RUNNING",
+    "phase1Status": "COMPLETED",
+    "phase2Status": "RUNNING",
+    "phase3Status": "QUEUED",
+    "lastUpdated": "2026-09-05T09:40:00Z",
+    "offlineReplayAvailable": false,
+    "warnings": ["Phase 2 OpenOil simulation running (65% complete)"]
+  }
+]
