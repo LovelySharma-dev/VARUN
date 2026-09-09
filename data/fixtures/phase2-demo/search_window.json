@@ -1,0 +1,39 @@
+﻿{
+  "contract_version": "phase2-to-phase3-v1",
+  "case_id": "CASE_DEMO_001",
+  "phase2_run_id": "DRIFT_RUN_001",
+  "detection_time_utc": "2026-08-20T05:30:00Z",
+  "crs": "EPSG:4326",
+  "release_window": {
+    "start_utc": "2026-08-19T05:30:00Z",
+    "end_utc": "2026-08-19T17:30:00Z",
+    "time_buffer_minutes": 60
+  },
+  "search_region": {
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [72.10, 18.40],
+          [72.80, 18.40],
+          [72.80, 19.00],
+          [72.10, 19.00],
+          [72.10, 18.40]
+        ]
+      ]
+    },
+    "spatial_buffer_m": 5000
+  },
+  "hindcast_corridor": {
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [72.30, 18.55],
+        [72.42, 18.65],
+        [72.55, 18.76]
+      ]
+    },
+    "direction_deg": 245,
+    "time_bands": []
+  }
+}

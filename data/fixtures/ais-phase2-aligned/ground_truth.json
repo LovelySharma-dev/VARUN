@@ -1,0 +1,15 @@
+{
+  "scenario_version": "phase3-known-target-v1",
+  "random_seed": 42,
+  "case_id": "CASE_DEMO_001",
+  "phase2_run_id": "DRIFT_RUN_001",
+  "scenario_type": "controlled_synthetic_attribution_demo",
+  "culprit_mmsi_restricted": "419000001",
+  "expected_candidate_id": "candidate-68f8b1f0ac34",
+  "expected_primary_behaviour": "LOITERING_AND_ABRUPT_MANOEUVRING",
+  "anomalous_interval_start_utc": "2026-08-19T09:30:00Z",
+  "anomalous_interval_end_utc": "2026-08-19T12:30:00Z",
+  "release_window_alignment": true,
+  "real_world_claim_allowed": false,
+  "notes": "Synthetic known-target fixture for deterministic Phase 3 integration testing; not evidence of a real spill or vessel."
+}

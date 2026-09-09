@@ -1,8 +1,25 @@
 [project]
 name = "varun-ais-engine"
 version = "0.1.0"
-requires-python = ">=3.11,<3.13"
-dependencies = []
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "fastapi==0.141.1",
+    "joblib==1.6.0",
+    "numpy==2.5.2",
+    "pandas==3.0.5",
+    "pydantic==2.13.5",
+    "pyproj==3.7.2",
+    "shapely==2.1.2",
+    "scikit-learn==1.6.1",
+    "tensorflow==2.21.0",
+    "uvicorn[standard]==0.52.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]

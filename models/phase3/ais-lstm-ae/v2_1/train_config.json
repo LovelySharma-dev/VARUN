@@ -1,0 +1,64 @@
+{
+  "config_version": "ais-training-config-v2.1",
+  "model_version": "ais-lstm-ae-v2.1",
+  "model_type": "LSTM_AUTOENCODER",
+  "random_seed": 42,
+  "training_scope": "eligible presumed-normal operational AIS windows from frozen training vessels only",
+  "input_shape": [
+    10,
+    8
+  ],
+  "feature_order": [
+    "speed",
+    "speed_change",
+    "time_diff_min",
+    "distance_step_km",
+    "turn_angle_deg",
+    "acceleration_kn_per_min",
+    "net_displacement_km",
+    "path_efficiency"
+  ],
+  "training_window_count": 242423,
+  "validation_window_count": 52934,
+  "architecture": {
+    "encoder_lstm_units": [
+      64,
+      32
+    ],
+    "bottleneck_units": 32,
+    "decoder_lstm_units": [
+      32,
+      64
+    ],
+    "dropout_rate": 0.1,
+    "output_activation": "linear",
+    "parameter_count": 64776
+  },
+  "optimization": {
+    "optimizer": "Adam",
+    "initial_learning_rate": 0.0005,
+    "gradient_clip_norm": 1.0,
+    "training_loss": "Huber",
+    "huber_delta": 1.0,
+    "monitoring_metrics": [
+      "MSE",
+      "MAE"
+    ],
+    "batch_size": 256,
+    "maximum_epochs": 60,
+    "early_stopping_patience": 10,
+    "lr_reduction_patience": 4,
+    "lr_reduction_factor": 0.5,
+    "minimum_learning_rate": 1e-06
+  },
+  "threshold_status": "NOT_CALIBRATED",
+  "anomaly_score_definition": "mean squared reconstruction error across all 10 timesteps and 8 features",
+  "training_array_sha256": "af9062b635c0c19239d1e80e8ddcd52b7c4232bdc91c1d4fb52f6993848ea5bf",
+  "validation_array_sha256": "17a2798a81d9b9d640cfeb6f4bbbfb562dbc5252178dfebdb4e264dab7d847bc",
+  "model_sha256": "3c7bc84c14ef1df8b4b5b9b7b7ee31e03faa8443c51532fd33294e29c3062465",
+  "best_checkpoint_sha256": "4d53488dc21f9a2f124b0bbb0db67089ffe3696ecc16395159c13e7331e5e105",
+  "tensorflow_version": "2.20.0",
+  "compute_device": "GPU",
+  "test_data_used": false,
+  "synthetic_anomalies_used": false
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "phase3-error-v1.schema.json",
+  "title": "VARUNA Phase 3 Error Response v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "detail"
+  ],
+  "properties": {
+    "detail": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

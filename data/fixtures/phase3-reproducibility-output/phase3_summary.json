@@ -1,0 +1,130 @@
+{
+  "schema_version": "phase3-summary-v1",
+  "case_id": "CASE_DEMO_001",
+  "phase2_run_id": "DRIFT_RUN_001",
+  "status": "COMPLETED",
+  "model_version": "ais-lstm-ae-v2.1",
+  "threshold": 0.06935688848908478,
+  "candidate_count": 3,
+  "scored_windows": 240,
+  "dark_gap_event_count": 0,
+  "score_semantics": "INVESTIGATIVE_PRIORITY_NOT_RESPONSIBILITY_PROBABILITY",
+  "calibration_status": "CONTROLLED_DEMO_HEURISTIC_NOT_REAL_WORLD_CALIBRATED",
+  "model_threshold_calibrated": true,
+  "ranking_weights_real_world_calibrated": false,
+  "real_world_liability_claim_allowed": false,
+  "warnings": [
+    "Controlled synthetic Phase 2 attribution fixture; not a real hindcast result."
+  ],
+  "audits": {
+    "ais_load": {
+      "source_file": "ais_input.csv",
+      "original_rows": 676,
+      "valid_rows": 676,
+      "removed_invalid_rows": 0,
+      "removed_duplicate_rows": 0,
+      "unique_vessels": 4,
+      "timezone_assumption": "UTC",
+      "timestamps_missing_explicit_timezone": 0,
+      "time_start_utc": "2026-08-19T04:30:00+00:00",
+      "time_end_utc": "2026-08-19T18:30:00+00:00"
+    },
+    "candidate_filter": {
+      "case_id": "CASE_DEMO_001",
+      "phase2_run_id": "DRIFT_RUN_001",
+      "input_rows": 676,
+      "input_vessels": 4,
+      "buffered_time_start_utc": "2026-08-19T04:30:00+00:00",
+      "buffered_time_end_utc": "2026-08-19T18:30:00+00:00",
+      "time_buffer_minutes": 60,
+      "spatial_buffer_m": 5000.0,
+      "rows_inside_time_gate": 676,
+      "rows_matching_time_and_space": 507,
+      "candidate_track_rows": 507,
+      "candidate_vessels": 3,
+      "public_identity_field": "candidate_id",
+      "restricted_identity_field": "mmsi"
+    },
+    "preprocessing": {
+      "pipeline_version": "ais-preprocessing-v2.1",
+      "original_rows": 507,
+      "processed_rows": 507,
+      "removed_invalid_rows": 0,
+      "removed_duplicate_rows": 0,
+      "removed_time_inversions": 0,
+      "unique_vessels": 3,
+      "track_segments": 3,
+      "dark_gap_events": 0,
+      "gap_threshold_minutes": 120.0,
+      "low_speed_threshold_knots": 0.5
+    },
+    "inference": {
+      "model_version": "ais-lstm-ae-v2.1",
+      "window_size": 10,
+      "window_stride": 2,
+      "vessel_window_cap": null,
+      "batch_size": 256,
+      "scored_windows": 240,
+      "scored_vessels": 3,
+      "alert_windows": 0,
+      "threshold": 0.06935688848908478,
+      "comparison_operator": "greater_than"
+    },
+    "spatial_evidence": {
+      "case_id": "CASE_DEMO_001",
+      "phase2_run_id": "DRIFT_RUN_001",
+      "candidate_vessels": 3,
+      "feature_rows": 3,
+      "release_start_utc": "2026-08-19T05:30:00+00:00",
+      "release_end_utc": "2026-08-19T17:30:00+00:00",
+      "distance_unit": "metres",
+      "scoring_applied": false,
+      "mmsi_exposed_in_features": false
+    },
+    "behaviour_evidence": {
+      "candidate_vessels": 3,
+      "model_threshold": 0.06935688848908478,
+      "rule_config": {
+        "low_speed_knots": 2.0,
+        "abrupt_turn_degrees": 30.0,
+        "sudden_speed_drop_knots": 5.0,
+        "calibration_status": "DEMO_RULES_NOT_REAL_WORLD_CALIBRATED"
+      },
+      "lstm_alert_candidates": 0,
+      "loitering_rule_candidates": 1,
+      "abrupt_turn_rule_candidates": 1,
+      "speed_drop_rule_candidates": 1,
+      "dark_gap_rule_candidates": 0,
+      "mmsi_exposed_in_features": false,
+      "final_responsibility_scoring_applied": false
+    },
+    "ranking": {
+      "candidate_count": 3,
+      "weights": {
+        "origin_proximity": 0.25,
+        "origin_dwell": 0.15,
+        "release_time_alignment": 0.15,
+        "corridor_alignment": 0.15,
+        "behaviour_rules": 0.2,
+        "lstm_continuous": 0.05,
+        "dark_gap": 0.05
+      },
+      "weight_sum": 1.0,
+      "normalization": {
+        "origin_distance_scale_m": 5000.0,
+        "origin_50_dwell_reference_pings": 24,
+        "release_midpoint_scale_minutes": 360.0,
+        "corridor_distance_scale_m": 5000.0,
+        "calibration_status": "CONTROLLED_DEMO_HEURISTIC_NOT_REAL_WORLD_CALIBRATED"
+      },
+      "score_semantics": "INVESTIGATIVE_PRIORITY_NOT_RESPONSIBILITY_PROBABILITY",
+      "mmsi_exposed": false
+    }
+  },
+  "artifact_sha256": {
+    "ranked_candidates.json": "374c0b81eae4091b41b34ecd660f5f608f64f49dd05db90d2b84ff9d4adfcb1a",
+    "candidate_features.csv": "ab9756a8208eafcd3aa2c28976d16c72d57a03a9569a9146e4c9a0ead32021b6",
+    "candidate_tracks.geojson": "e30e7360d16498c4907affe4086975e537ec96be146c091b6831582cd2ce4b17",
+    "dark_gap_events.json": "c0fa38add2c15cc375b23f38b829cd77bb6886ba95f7734a82a2d4166eb136a1"
+  }
+}

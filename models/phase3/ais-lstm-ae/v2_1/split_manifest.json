@@ -1,0 +1,19 @@
+{
+  "manifest_version": "ais-vessel-split-v2.1",
+  "random_seed": 42,
+  "split_strategy": "grouped_by_vessel_id",
+  "train_ratio": 0.7,
+  "validation_ratio": 0.15,
+  "test_ratio": 0.15,
+  "eligible_vessels_count": 2736,
+  "train_vessels_count": 1915,
+  "validation_vessels_count": 410,
+  "test_vessels_count": 411,
+  "train_rows_count": 1073243,
+  "validation_rows_count": 242904,
+  "test_rows_count": 231585,
+  "train_ids_sha256": "28df0730f5e207be728e00c417313b0cd893bb9b06436effe7e703c80977253f",
+  "validation_ids_sha256": "7da2c40952788b41f3ac972196095fb98fde79ca58b7231ea13da17ae9513d9f",
+  "test_ids_sha256": "f32f3f8d8da279dccf716ee851f95bfe13e852f9f5dfbd6ba0a996a675dc9773",
+  "leakage_assertions": "PASSED"
+}

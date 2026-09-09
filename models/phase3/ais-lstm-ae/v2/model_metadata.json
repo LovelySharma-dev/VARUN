@@ -1,0 +1,19 @@
+{
+    "model_version": "ais-lstm-ae-v2",
+    "model_type": "LSTM_AUTOENCODER",
+    "time_steps": 10,
+    "feature_order": [
+        "speed",
+        "speed_change",
+        "time_diff_min",
+        "distance_step_km",
+        "turn_angle_deg",
+        "acceleration_kn_per_min",
+        "net_displacement_km",
+        "path_efficiency"
+    ],
+    "training_scope": "normal_sequences_only",
+    "split_strategy": "grouped_by_vessel_id_leakage_safe",
+    "threshold_method": "validation_95th_percentile",
+    "random_seed": 42
+}
