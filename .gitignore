@@ -40,6 +40,7 @@ ENV/
 
 # Data, Model Weights & Artifacts
 data/raw/
+services/drift-engine/data/cases/**
 data/processed/
 data/environmental/
 artifacts/cases/

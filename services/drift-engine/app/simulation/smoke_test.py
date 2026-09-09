@@ -32,10 +32,6 @@ def test_opendrift_smoke() -> bool:
     print("VARUN Phase 2 OpenDrift Smoke Test")
     print("=" * 60)
 
-    # =========================================================
-    # 1. Import OpenOil
-    # =========================================================
-
     try:
         from opendrift.models.openoil import OpenOil
 
@@ -45,10 +41,6 @@ def test_opendrift_smoke() -> bool:
         print(f"✗ Failed to import OpenDrift: {e}")
         return False
 
-    # =========================================================
-    # 2. Instantiate OpenOil
-    # =========================================================
-
     try:
         o = OpenOil(loglevel=logging.WARNING)
 
@@ -57,16 +49,6 @@ def test_opendrift_smoke() -> bool:
     except Exception as e:
         print(f"✗ Failed to create OpenOil: {e}")
         return False
-
-    # =========================================================
-    # 3. Configure fallback environment
-    #
-    # We intentionally do NOT use reader_basemap here.
-    #
-    # This smoke test does not require real ocean/wind data.
-    # Constant fallback values are enough to verify that the
-    # OpenOil model can execute.
-    # =========================================================
 
     try:
         # Ocean current - X direction
@@ -105,10 +87,6 @@ def test_opendrift_smoke() -> bool:
         print(f"✗ Failed to configure environmental forcing: {e}")
         return False
 
-    # =========================================================
-    # 4. Seed particles
-    # =========================================================
-
     try:
         lons = np.array([5.0, 5.1])
         lats = np.array([60.0, 60.1])
@@ -134,10 +112,6 @@ def test_opendrift_smoke() -> bool:
         print(f"✗ Failed to seed particles: {e}")
         return False
 
-    # =========================================================
-    # 5. Run simulation
-    # =========================================================
-
     try:
         o.run(
         duration=timedelta(hours=1),
@@ -150,14 +124,6 @@ def test_opendrift_smoke() -> bool:
         print(f"✗ Simulation failed: {e}")
         return False
 
-    # =========================================================
-    # 6. Check trajectory output
-    #
-    # IMPORTANT:
-    # Newer OpenDrift versions expose simulation output through
-    # o.result rather than o.history.
-    # =========================================================
-
     try:
         result = o.result
 
@@ -165,25 +131,13 @@ def test_opendrift_smoke() -> bool:
             print("✗ OpenDrift returned no result dataset")
             return False
 
-        # -----------------------------------------------------
-        # Check longitude
-        # -----------------------------------------------------
-
         if "lon" not in result:
             print("✗ Longitude data missing from result")
             return False
 
-        # -----------------------------------------------------
-        # Check latitude
-        # -----------------------------------------------------
-
         if "lat" not in result:
             print("✗ Latitude data missing from result")
             return False
-
-        # -----------------------------------------------------
-        # Check time
-        # -----------------------------------------------------
 
         if "time" not in result.coords:
             print("✗ Time coordinate missing from result")
@@ -214,10 +168,6 @@ def test_opendrift_smoke() -> bool:
     except Exception as e:
         print(f"✗ Failed to extract trajectory: {e}")
         return False
-
-    # =========================================================
-    # 7. Test NetCDF writing
-    # =========================================================
 
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -255,10 +205,6 @@ def test_opendrift_smoke() -> bool:
     except Exception as e:
         print(f"✗ NetCDF writing failed: {e}")
         return False
-
-    # =========================================================
-    # 8. Final success
-    # =========================================================
 
     print("\n" + "=" * 60)
     print("✓ ALL OPENDRIFT SMOKE TESTS PASSED!")

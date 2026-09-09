@@ -8,11 +8,15 @@ from app.forcing.models import (
     TemporalBounds,
     VariableInfo,
 )
-from app.forcing.readers import create_forcing_reader
+from app.forcing.readers import (
+    create_combined_readers,
+    create_forcing_reader,
+)
 
 __all__ = [
     "audit_forcing_file",
     "create_forcing_reader",
+    "create_combined_readers",
     "ForcingAuditResult",
     "ForcingConfig",
     "SpatialBounds",
