@@ -1,14 +1,676 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-// PostGIS geometry columns are Unsupported and are queried with parameterized
-// `pg` SQL. The SQL migrations in infrastructure/database are canonical.
+model Case {
+  id                    String                   @id @default(dbgenerated("gen_random_uuid()")) @map("case_id") @db.Uuid
+  code                  String                   @unique @map("case_code")
+  title                 String
+  description           String?
+  dataOrigin            DataOrigin               @map("data_origin")
+  region                Unsupported("geometry")?
+  status                String                   @default("OPEN")
+  createdAt             DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(6)
+  metadata              Json                     @default("{}")
+  aisDatasets           AisDataset[]
+  runs                  AnalysisRun[]
+  controlled_scenarios  controlled_scenarios[]
+  environmentalDatasets EnvironmentalDataset[]
+  scenes                Scene[]
+
+  @@index([region], map: "cases_region_gix", type: Gist)
+  @@map("cases")
+}
+
+model Scene {
+  id                   String                  @id @default(dbgenerated("gen_random_uuid()")) @map("scene_id") @db.Uuid
+  caseId               String                  @map("case_id") @db.Uuid
+  externalSceneId      String                  @map("external_scene_id")
+  sensor               String
+  acquisitionTimeUtc   DateTime                @map("acquisition_time_utc") @db.Timestamptz(6)
+  footprint            Unsupported("geometry")
+  crs                  String
+  dataOrigin           DataOrigin              @map("data_origin")
+  sourceUri            String?                 @map("source_uri")
+  sourceChecksumSha256 String?                 @map("source_checksum_sha256")
+  metadata             Json                    @default("{}")
+  createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  runs                 AnalysisRun[]
+  case                 Case                    @relation(fields: [caseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([caseId, externalSceneId])
+  @@index([caseId, acquisitionTimeUtc], map: "scenes_case_time_idx")
+  @@index([footprint], map: "scenes_footprint_gix", type: Gist)
+  @@map("scenes")
+}
+
+model AnalysisRun {
+  id                                             String                @id @default(dbgenerated("gen_random_uuid()")) @map("analysis_run_id") @db.Uuid
+  caseId                                         String                @map("case_id") @db.Uuid
+  sceneId                                        String?               @map("scene_id") @db.Uuid
+  phase                                          PhaseCode
+  status                                         RunStatus             @default(QUEUED)
+  dataOrigin                                     DataOrigin            @map("data_origin")
+  retryOfRunId                                   String?               @map("retry_of_run_id") @db.Uuid
+  idempotencyKey                                 String?               @map("idempotency_key")
+  inputContractVersion                           String                @map("input_contract_version")
+  outputContractVersion                          String?               @map("output_contract_version")
+  configHash                                     String                @map("config_hash")
+  codeVersion                                    String                @map("code_version")
+  requestedBy                                    String?               @map("requested_by")
+  startedAt                                      DateTime?             @map("started_at") @db.Timestamptz(6)
+  finishedAt                                     DateTime?             @map("finished_at") @db.Timestamptz(6)
+  createdAt                                      DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  inputSnapshot                                  Json                  @map("input_snapshot")
+  provenance                                     Json                  @default("{}")
+  case                                           Case                  @relation(fields: [caseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  retryOf                                        AnalysisRun?          @relation("RunRetry", fields: [retryOfRunId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  retries                                        AnalysisRun[]         @relation("RunRetry")
+  scene                                          Scene?                @relation(fields: [sceneId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  artifacts                                      Artifact[]
+  candidate_decisions                            candidate_decisions[]
+  layers                                         DashboardLayer[]
+  handoffs_handoffs_source_run_idToanalysis_runs handoffs[]            @relation("handoffs_source_run_idToanalysis_runs")
+  handoffs_handoffs_target_run_idToanalysis_runs handoffs[]            @relation("handoffs_target_run_idToanalysis_runs")
+  jobs                                           JobExecution[]
+  phase1Result                                   Phase1Result?
+  phase2Result                                   Phase2Result?
+  candidates                                     Phase3Candidate[]
+  events                                         RunEvent[]
+  warnings                                       RunWarning[]
+  timelineFrames                                 TimelineFrame[]
+
+  @@unique([caseId, phase, idempotencyKey], map: "analysis_runs_idempotency_uq", where: raw("(idempotency_key IS NOT NULL)"))
+  @@index([caseId, phase, status], map: "analysis_runs_case_phase_status_idx")
+  @@index([sceneId], map: "analysis_runs_scene_idx")
+  @@map("analysis_runs")
+}
+
+model RunEvent {
+  id              BigInt      @id @default(autoincrement()) @map("run_event_id")
+  analysisRunId   String      @map("analysis_run_id") @db.Uuid
+  status          RunStatus
+  stage           String
+  progressPercent Decimal?    @map("progress_percent") @db.Decimal(5, 2)
+  safeMessage     String?     @map("safe_message")
+  errorCode       String?     @map("error_code")
+  retryable       Boolean?
+  correlationId   String?     @map("correlation_id")
+  details         Json        @default("{}")
+  occurredAt      DateTime    @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  run             AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([analysisRunId, occurredAt], map: "run_events_run_time_idx")
+  @@map("run_events")
+}
+
+model JobExecution {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @map("job_execution_id") @db.Uuid
+  analysisRunId  String      @map("analysis_run_id") @db.Uuid
+  queueName      String      @map("queue_name")
+  bossJobId      String?     @map("boss_job_id") @db.Uuid
+  idempotencyKey String      @unique @map("idempotency_key")
+  attemptNo      Int         @default(1) @map("attempt_no")
+  status         String
+  correlationId  String      @map("correlation_id")
+  availableAt    DateTime?   @map("available_at") @db.Timestamptz(6)
+  startedAt      DateTime?   @map("started_at") @db.Timestamptz(6)
+  completedAt    DateTime?   @map("completed_at") @db.Timestamptz(6)
+  safeError      Json?       @map("safe_error")
+  run            AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("job_executions")
+}
+
+model Artifact {
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @map("artifact_id") @db.Uuid
+  analysisRunId   String                   @map("analysis_run_id") @db.Uuid
+  role            artifact_role
+  logicalName     String                   @map("logical_name")
+  artifactVersion String                   @map("artifact_version")
+  uri             String
+  mediaType       String                   @map("media_type")
+  checksumSha256  String                   @map("checksum_sha256")
+  sizeBytes       BigInt?                  @map("size_bytes")
+  bounds          Unsupported("geometry")?
+  timeStartUtc    DateTime?                @map("time_start_utc") @db.Timestamptz(6)
+  timeEndUtc      DateTime?                @map("time_end_utc") @db.Timestamptz(6)
+  metadata        Json                     @default("{}")
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  run             AnalysisRun              @relation(fields: [analysisRunId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  layers          DashboardLayer[]
+  model_versions  ModelVersion[]
+  phase2_results  Phase2Result[]
+  frames          TimelineFrame[]
+
+  @@unique([analysisRunId, logicalName, artifactVersion])
+  @@index([bounds], map: "artifacts_bounds_gix", type: Gist)
+  @@index([analysisRunId, role], map: "artifacts_run_role_idx")
+  @@map("artifacts")
+}
+
+model RunWarning {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @map("warning_id") @db.Uuid
+  analysisRunId String      @map("analysis_run_id") @db.Uuid
+  code          String
+  severity      String
+  message       String
+  stage         String?
+  details       Json        @default("{}")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  run           AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("run_warnings")
+}
+
+model DashboardLayer {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @map("dashboard_layer_id") @db.Uuid
+  analysisRunId    String             @map("analysis_run_id") @db.Uuid
+  artifactId       String             @map("artifact_id") @db.Uuid
+  layerKey         String             @map("layer_key")
+  kind             String
+  role             String
+  visibleByDefault Boolean            @default(false) @map("visible_by_default")
+  displayOrder     Int                @default(0) @map("display_order")
+  style            Json               @default("{}")
+  availability     AvailabilityStatus @default(AVAILABLE)
+  run              AnalysisRun        @relation(fields: [analysisRunId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  artifact         Artifact           @relation(fields: [artifactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  frames           TimelineFrame[]
+
+  @@unique([analysisRunId, layerKey])
+  @@map("dashboard_layers")
+}
+
+model TimelineFrame {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @map("timeline_frame_id") @db.Uuid
+  analysisRunId    String             @map("analysis_run_id") @db.Uuid
+  dashboardLayerId String?            @map("dashboard_layer_id") @db.Uuid
+  frameTimeUtc     DateTime           @map("frame_time_utc") @db.Timestamptz(6)
+  relativeSeconds  Int                @map("relative_seconds")
+  artifactId       String?            @map("artifact_id") @db.Uuid
+  availability     AvailabilityStatus @default(AVAILABLE)
+  metadata         Json               @default("{}")
+  run              AnalysisRun        @relation(fields: [analysisRunId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  artifact         Artifact?          @relation(fields: [artifactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  layer            DashboardLayer?    @relation(fields: [dashboardLayerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([analysisRunId, dashboardLayerId, frameTimeUtc])
+  @@map("timeline_frames")
+}
+
+model Phase1Result {
+  analysisRunId           String             @id @map("analysis_run_id") @db.Uuid
+  modelVersionId          String             @map("model_version_id") @db.Uuid
+  observationTimeUtc      DateTime           @map("observation_time_utc") @db.Timestamptz(6)
+  sceneMetricAvailability AvailabilityStatus @map("scene_metric_availability")
+  detectionCount          Int                @default(0) @map("detection_count")
+  summary                 Json               @default("{}")
+  detections              DetectionRegion[]
+  metricSets              Phase1MetricSet[]
+  run                     AnalysisRun        @relation(fields: [analysisRunId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  modelVersion            ModelVersion       @relation(fields: [modelVersionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  phase2Results           Phase2Result[]
+
+  @@map("phase1_results")
+}
+
+model ModelVersion {
+  id                   String         @id @default(dbgenerated("gen_random_uuid()")) @map("model_version_id") @db.Uuid
+  modelName            String         @map("model_name")
+  semanticVersion      String         @map("semantic_version")
+  stage                String
+  architecture         String
+  framework            String
+  inputProfile         String         @map("input_profile")
+  preprocessingVersion String         @map("preprocessing_version")
+  thresholdVersion     String         @map("threshold_version")
+  thresholdValue       Decimal        @map("threshold_value") @db.Decimal
+  packageArtifactId    String?        @map("package_artifact_id") @db.Uuid
+  evaluationSummary    Json           @default("{}") @map("evaluation_summary")
+  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  approvedAt           DateTime?      @map("approved_at") @db.Timestamptz(6)
+  artifacts            Artifact?      @relation(fields: [packageArtifactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  phase1Results        Phase1Result[]
+
+  @@unique([modelName, semanticVersion])
+  @@map("model_versions")
+}
+
+model DetectionRegion {
+  id             String                   @id @default(dbgenerated("gen_random_uuid()")) @map("detection_region_id") @db.Uuid
+  analysisRunId  String                   @map("analysis_run_id") @db.Uuid
+  regionNo       Int                      @map("region_no")
+  classification String                   @default("OIL_LIKELIHOOD")
+  geometry       Unsupported("geometry")
+  coreGeometry   Unsupported("geometry")? @map("core_geometry")
+  outerGeometry  Unsupported("geometry")? @map("outer_geometry")
+  centroid       Unsupported("geometry")
+  areaM2         Decimal?                 @map("area_m2") @db.Decimal
+  perimeterM     Decimal?                 @map("perimeter_m") @db.Decimal
+  orientationDeg Decimal?                 @map("orientation_deg") @db.Decimal
+  meanLikelihood Decimal?                 @map("mean_likelihood") @db.Decimal
+  properties     Json                     @default("{}")
+  result         Phase1Result             @relation(fields: [analysisRunId], references: [analysisRunId], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([analysisRunId, regionNo])
+  @@index([geometry], map: "detection_regions_geom_gix", type: Gist)
+  @@map("detection_regions")
+}
+
+model Phase1MetricSet {
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @map("phase1_metric_set_id") @db.Uuid
+  analysisRunId  String             @map("analysis_run_id") @db.Uuid
+  context        String
+  datasetVersion String?            @map("dataset_version")
+  availability   AvailabilityStatus
+  sampleCount    Int?               @map("sample_count")
+  metrics        Json               @default("{}")
+  reason         String?
+  result         Phase1Result       @relation(fields: [analysisRunId], references: [analysisRunId], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([analysisRunId, context])
+  @@map("phase1_metric_sets")
+}
+
+model EnvironmentalDataset {
+  id             String                  @id @default(dbgenerated("gen_random_uuid()")) @map("environmental_dataset_id") @db.Uuid
+  caseId         String                  @map("case_id") @db.Uuid
+  datasetVersion String                  @map("dataset_version")
+  provider       String
+  productId      String                  @map("product_id")
+  variables      Json
+  units          Json
+  coverage       Unsupported("geometry")
+  timeStartUtc   DateTime                @map("time_start_utc") @db.Timestamptz(6)
+  timeEndUtc     DateTime                @map("time_end_utc") @db.Timestamptz(6)
+  checksumSha256 String                  @map("checksum_sha256")
+  licenceNote    String?                 @map("licence_note")
+  dataOrigin     DataOrigin              @map("data_origin")
+  metadata       Json                    @default("{}")
+  case           Case                    @relation(fields: [caseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  phase2Results  Phase2Result[]
+
+  @@unique([caseId, datasetVersion])
+  @@index([coverage], map: "environmental_coverage_gix", type: Gist)
+  @@map("environmental_datasets")
+}
+
+model Phase2Result {
+  analysisRunId            String                   @id @map("analysis_run_id") @db.Uuid
+  phase1RunId              String                   @map("phase1_run_id") @db.Uuid
+  environmentalDatasetId   String                   @map("environmental_dataset_id") @db.Uuid
+  detectionTimeUtc         DateTime                 @map("detection_time_utc") @db.Timestamptz(6)
+  releaseStartUtc          DateTime                 @map("release_start_utc") @db.Timestamptz(6)
+  releaseEndUtc            DateTime                 @map("release_end_utc") @db.Timestamptz(6)
+  timeBufferMinutes        Int                      @map("time_buffer_minutes")
+  searchRegion             Unsupported("geometry")  @map("search_region")
+  spatialBufferM           Decimal                  @map("spatial_buffer_m") @db.Decimal
+  hindcastCorridor         Unsupported("geometry")? @map("hindcast_corridor")
+  evidenceMode             String                   @map("evidence_mode")
+  originEvidenceArtifactId String?                  @map("origin_evidence_artifact_id") @db.Uuid
+  summary                  Json                     @default("{}")
+  scenarios                DriftScenario[]
+  forecast_summaries       forecast_summaries?
+  originRegions            OriginRegion[]
+  run                      AnalysisRun              @relation(fields: [analysisRunId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  environmentalDataset     EnvironmentalDataset     @relation(fields: [environmentalDatasetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  artifacts                Artifact?                @relation(fields: [originEvidenceArtifactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  phase1Result             Phase1Result             @relation(fields: [phase1RunId], references: [analysisRunId], onDelete: NoAction, onUpdate: NoAction)
+  reconstructionMetrics    ReconstructionMetric[]
+
+  @@index([searchRegion], map: "phase2_search_region_gix", type: Gist)
+  @@map("phase2_results")
+}
+
+model DriftScenario {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @map("drift_scenario_id") @db.Uuid
+  analysisRunId        String                 @map("analysis_run_id") @db.Uuid
+  scenarioCode         String                 @map("scenario_code")
+  candidateAgeHours    Decimal?               @map("candidate_age_hours") @db.Decimal
+  particleCount        Int                    @map("particle_count")
+  randomSeed           BigInt                 @map("random_seed")
+  direction            String
+  forcingPerturbation  Json                   @default("{}") @map("forcing_perturbation")
+  boundaryVariant      String?                @map("boundary_variant")
+  oilScenario          Json?                  @map("oil_scenario")
+  configHash           String                 @map("config_hash")
+  status               String
+  result               Phase2Result           @relation(fields: [analysisRunId], references: [analysisRunId], onDelete: NoAction, onUpdate: NoAction)
+  reconstructionMetric ReconstructionMetric[]
+
+  @@unique([analysisRunId, scenarioCode])
+  @@map("drift_scenarios")
+}
+
+model OriginRegion {
+  id                String                  @id @default(dbgenerated("gen_random_uuid()")) @map("origin_region_id") @db.Uuid
+  analysisRunId     String                  @map("analysis_run_id") @db.Uuid
+  regionCode        String                  @map("region_code")
+  contourLevel      Int?                    @map("contour_level")
+  modeRank          Int?                    @map("mode_rank")
+  geometry          Unsupported("geometry")
+  evidenceValue     Decimal?                @map("evidence_value") @db.Decimal
+  evidenceSemantics String                  @map("evidence_semantics")
+  releaseStartUtc   DateTime?               @map("release_start_utc") @db.Timestamptz(6)
+  releaseEndUtc     DateTime?               @map("release_end_utc") @db.Timestamptz(6)
+  provenance        Json                    @default("{}")
+  result            Phase2Result            @relation(fields: [analysisRunId], references: [analysisRunId], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([analysisRunId, regionCode])
+  @@index([geometry], map: "origin_regions_geom_gix", type: Gist)
+  @@map("origin_regions")
+}
+
+model ReconstructionMetric {
+  id                      String        @id @default(dbgenerated("gen_random_uuid()")) @map("reconstruction_metric_id") @db.Uuid
+  analysisRunId           String        @map("analysis_run_id") @db.Uuid
+  driftScenarioId         String        @map("drift_scenario_id") @db.Uuid
+  centroidErrorM          Decimal?      @map("centroid_error_m") @db.Decimal
+  iou                     Decimal?      @db.Decimal
+  containment             Decimal?      @db.Decimal
+  orientationErrorDeg     Decimal?      @map("orientation_error_deg") @db.Decimal
+  areaErrorRatio          Decimal?      @map("area_error_ratio") @db.Decimal
+  forwardConsistencyScore Decimal?      @map("forward_consistency_score") @db.Decimal
+  metricVersion           String        @map("metric_version")
+  details                 Json          @default("{}")
+  result                  Phase2Result  @relation(fields: [analysisRunId], references: [analysisRunId], onDelete: NoAction, onUpdate: NoAction)
+  scenario                DriftScenario @relation(fields: [driftScenarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([analysisRunId, driftScenarioId])
+  @@map("reconstruction_metrics")
+}
+
+model AisDataset {
+  id                   String                     @id @default(dbgenerated("gen_random_uuid()")) @map("ais_dataset_id") @db.Uuid
+  caseId               String                     @map("case_id") @db.Uuid
+  datasetVersion       String                     @map("dataset_version")
+  provider             String
+  sourceId             String                     @map("source_id")
+  licenceNote          String                     @map("licence_note")
+  dataOrigin           DataOrigin                 @map("data_origin")
+  coverage             Unsupported("geometry")
+  timeStartUtc         DateTime                   @map("time_start_utc") @db.Timestamptz(6)
+  timeEndUtc           DateTime                   @map("time_end_utc") @db.Timestamptz(6)
+  checksumSha256       String                     @map("checksum_sha256")
+  publicIdentityPolicy String                     @map("public_identity_policy")
+  metadata             Json                       @default("{}")
+  case                 Case                       @relation(fields: [caseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ingests              AisIngest[]
+  identities           RestrictedVesselIdentity[]
+
+  @@unique([caseId, datasetVersion])
+  @@index([coverage], map: "ais_datasets_coverage_gix", type: Gist)
+  @@map("ais_datasets")
+}
+
+model AisIngest {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @map("ais_ingest_id") @db.Uuid
+  aisDatasetId       String               @map("ais_dataset_id") @db.Uuid
+  ingestVersion      String               @map("ingest_version")
+  rawRowCount        BigInt               @map("raw_row_count")
+  cleanRowCount      BigInt               @map("clean_row_count")
+  duplicateCount     BigInt               @default(0) @map("duplicate_count")
+  rejectedCount      BigInt               @default(0) @map("rejected_count")
+  qualitySummary     Json                 @default("{}") @map("quality_summary")
+  configHash         String               @map("config_hash")
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  dataset            AisDataset           @relation(fields: [aisDatasetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ais_points         ais_points[]
+  ais_track_segments ais_track_segments[]
+
+  @@unique([aisDatasetId, ingestVersion])
+  @@map("ais_ingests")
+}
+
+model RestrictedVesselIdentity {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @map("identity_id") @db.Uuid
+  aisDatasetId          String                  @map("ais_dataset_id") @db.Uuid
+  mmsi                  String?
+  providerVesselId      String?                 @map("provider_vessel_id")
+  approvedMetadata      Json                    @default("{}") @map("approved_metadata")
+  restrictedMetadata    Json                    @default("{}") @map("restricted_metadata")
+  createdAt             DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  ais_points            ais_points[]
+  ais_track_segments    ais_track_segments[]
+  candidate_decisions   candidate_decisions[]
+  candidates            Phase3Candidate[]
+  dataset               AisDataset              @relation(fields: [aisDatasetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  scenario_ground_truth scenario_ground_truth[]
+
+  @@unique([aisDatasetId, mmsi])
+  @@map("restricted_vessel_identities")
+}
+
+model Phase3Candidate {
+  id                  String                   @id @default(dbgenerated("gen_random_uuid()")) @map("candidate_id") @db.Uuid
+  analysisRunId       String                   @map("analysis_run_id") @db.Uuid
+  identityId          String                   @map("identity_id") @db.Uuid
+  candidateSetVersion String                   @map("candidate_set_version")
+  publicMetadata      Json                     @default("{}") @map("public_metadata")
+  createdAt           DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  candidate_decisions candidate_decisions[]
+  features            CandidateFeature[]
+  scores              CandidateScore[]
+  evidenceEvents      EvidenceEvent[]
+  run                 AnalysisRun              @relation(fields: [analysisRunId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  identity            RestrictedVesselIdentity @relation(fields: [identityId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([analysisRunId, identityId])
+  @@unique([analysisRunId, id])
+  @@map("phase3_candidates")
+}
+
+model CandidateFeature {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @map("candidate_feature_id") @db.Uuid
+  candidateId     String             @map("candidate_id") @db.Uuid
+  featureName     String             @map("feature_name")
+  featureVersion  String             @map("feature_version")
+  rawValue        Decimal?           @map("raw_value") @db.Decimal
+  normalizedValue Decimal?           @map("normalized_value") @db.Decimal
+  unit            String?
+  availability    AvailabilityStatus
+  sourceKind      point_source?      @map("source_kind")
+  confidenceCap   Decimal?           @map("confidence_cap") @db.Decimal
+  reason          String?
+  provenance      Json               @default("{}")
+  candidate       Phase3Candidate    @relation(fields: [candidateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([candidateId, featureName, featureVersion])
+  @@map("candidate_features")
+}
+
+model EvidenceEvent {
+  id           String                   @id @default(dbgenerated("gen_random_uuid()")) @map("evidence_event_id") @db.Uuid
+  candidateId  String                   @map("candidate_id") @db.Uuid
+  kind         evidence_kind
+  eventCode    String                   @map("event_code")
+  eventTimeUtc DateTime?                @map("event_time_utc") @db.Timestamptz(6)
+  timeEndUtc   DateTime?                @map("time_end_utc") @db.Timestamptz(6)
+  geometry     Unsupported("geometry")?
+  rawValue     Decimal?                 @map("raw_value") @db.Decimal
+  unit         String?
+  sourceKind   point_source?            @map("source_kind")
+  explanation  String
+  details      Json                     @default("{}")
+  candidate    Phase3Candidate          @relation(fields: [candidateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([geometry], map: "evidence_events_geom_gix", type: Gist)
+  @@map("evidence_events")
+}
+
+model CandidateScore {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @map("candidate_score_id") @db.Uuid
+  candidateId        String              @map("candidate_id") @db.Uuid
+  scoreVersion       String              @map("score_version")
+  configHash         String              @map("config_hash")
+  investigativeScore Decimal             @map("investigative_score") @db.Decimal
+  rank               Int
+  confidence         evidence_confidence
+  positiveTotal      Decimal             @map("positive_total") @db.Decimal
+  negativeTotal      Decimal             @default(0) @map("negative_total") @db.Decimal
+  confidenceCap      Decimal?            @map("confidence_cap") @db.Decimal
+  explanation        String
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  candidate          Phase3Candidate     @relation(fields: [candidateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  components         ScoreComponent[]
+
+  @@unique([candidateId, scoreVersion])
+  @@index([scoreVersion, rank], map: "candidate_scores_rank_idx")
+  @@map("candidate_scores")
+}
+
+model ScoreComponent {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @map("score_component_id") @db.Uuid
+  candidateScoreId String         @map("candidate_score_id") @db.Uuid
+  componentName    String         @map("component_name")
+  rawValue         Decimal?       @map("raw_value") @db.Decimal
+  normalizedValue  Decimal?       @map("normalized_value") @db.Decimal
+  weight           Decimal        @db.Decimal
+  contribution     Decimal        @db.Decimal
+  isDeduction      Boolean        @default(false) @map("is_deduction")
+  capApplied       Decimal?       @map("cap_applied") @db.Decimal
+  reason           String
+  score            CandidateScore @relation(fields: [candidateScoreId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([candidateScoreId, componentName])
+  @@map("score_components")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ais_points {
+  ais_point_id                 BigInt                   @id @default(autoincrement())
+  ais_ingest_id                String                   @db.Uuid
+  identity_id                  String                   @db.Uuid
+  observed_at                  DateTime                 @db.Timestamptz(6)
+  position                     Unsupported("geometry")
+  sog_knots                    Decimal?                 @db.Decimal
+  cog_deg                      Decimal?                 @db.Decimal
+  heading_deg                  Decimal?                 @db.Decimal
+  nav_status                   String?
+  quality_flags                Json                     @default("[]")
+  raw_ref                      Json                     @default("{}")
+  ais_ingests                  AisIngest                @relation(fields: [ais_ingest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  restricted_vessel_identities RestrictedVesselIdentity @relation(fields: [identity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([identity_id, observed_at], map: "ais_points_identity_time_idx")
+  @@index([position], map: "ais_points_position_gix", type: Gist)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ais_track_segments {
+  track_segment_id             String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ais_ingest_id                String                   @db.Uuid
+  identity_id                  String                   @db.Uuid
+  started_at                   DateTime                 @db.Timestamptz(6)
+  ended_at                     DateTime                 @db.Timestamptz(6)
+  source_kind                  point_source
+  track                        Unsupported("geometry")
+  observed_point_count         Int                      @default(0)
+  interpolated_point_count     Int                      @default(0)
+  coverage_ratio               Decimal?                 @db.Decimal
+  largest_gap_seconds          Int?
+  uncertainty_flags            Json                     @default("[]")
+  ais_ingests                  AisIngest                @relation(fields: [ais_ingest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  restricted_vessel_identities RestrictedVesselIdentity @relation(fields: [identity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([identity_id, started_at, ended_at], map: "ais_segments_identity_time_idx")
+  @@index([track], map: "ais_segments_track_gix", type: Gist)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model candidate_decisions {
+  candidate_decision_id        String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  analysis_run_id              String                   @db.Uuid
+  identity_id                  String                   @db.Uuid
+  candidate_id                 String?                  @db.Uuid
+  decision                     decision_kind
+  reason_code                  String
+  contact_type                 String?
+  evidence                     Json                     @default("{}")
+  config_hash                  String
+  decided_at                   DateTime                 @default(now()) @db.Timestamptz(6)
+  analysis_runs                AnalysisRun              @relation(fields: [analysis_run_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  phase3_candidates            Phase3Candidate?         @relation(fields: [candidate_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  restricted_vessel_identities RestrictedVesselIdentity @relation(fields: [identity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([analysis_run_id, identity_id])
+  @@index([analysis_run_id, decision], map: "candidate_decisions_run_decision_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model controlled_scenarios {
+  controlled_scenario_id String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scenario_code          String                 @unique
+  case_id                String                 @db.Uuid
+  data_origin            DataOrigin
+  split                  String
+  scenario_version       String
+  description            String
+  config_hash            String
+  created_at             DateTime               @default(now()) @db.Timestamptz(6)
+  cases                  Case                   @relation(fields: [case_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  scenario_ground_truth  scenario_ground_truth?
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model forecast_summaries {
+  analysis_run_id        String                   @id @db.Uuid
+  forecast_start_utc     DateTime                 @db.Timestamptz(6)
+  forecast_end_utc       DateTime                 @db.Timestamptz(6)
+  oil_scenario           Json
+  coastal_contact_status String
+  earliest_contact_utc   DateTime?                @db.Timestamptz(6)
+  coastal_geometry       Unsupported("geometry")?
+  availability           AvailabilityStatus
+  warnings               Json                     @default("[]")
+  phase2_results         Phase2Result             @relation(fields: [analysis_run_id], references: [analysisRunId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model handoffs {
+  handoff_id                                          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source_run_id                                       String       @db.Uuid
+  target_phase                                        PhaseCode
+  target_run_id                                       String?      @db.Uuid
+  contract_version                                    String
+  payload                                             Json
+  checksum_sha256                                     String
+  validation_status                                   String
+  validation_report                                   Json         @default("{}")
+  created_at                                          DateTime     @default(now()) @db.Timestamptz(6)
+  analysis_runs_handoffs_source_run_idToanalysis_runs AnalysisRun  @relation("handoffs_source_run_idToanalysis_runs", fields: [source_run_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  analysis_runs_handoffs_target_run_idToanalysis_runs AnalysisRun? @relation("handoffs_target_run_idToanalysis_runs", fields: [target_run_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([source_run_id, target_phase, contract_version])
+}
+
+model scenario_ground_truth {
+  controlled_scenario_id       String                   @id @db.Uuid
+  target_identity_id           String                   @db.Uuid
+  release_time_utc             DateTime                 @db.Timestamptz(6)
+  release_location             Unsupported("geometry")
+  truth_source                 String
+  verified_by                  String?
+  created_at                   DateTime                 @default(now()) @db.Timestamptz(6)
+  controlled_scenarios         controlled_scenarios     @relation(fields: [controlled_scenario_id], references: [controlled_scenario_id], onDelete: NoAction, onUpdate: NoAction)
+  restricted_vessel_identities RestrictedVesselIdentity @relation(fields: [target_identity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
 
 enum DataOrigin {
   REAL
@@ -49,508 +711,38 @@ enum AvailabilityStatus {
   @@map("availability_status")
 }
 
-model Case {
-  id                    String                                  @id @default(dbgenerated("gen_random_uuid()")) @map("case_id") @db.Uuid
-  code                  String                                  @unique @map("case_code")
-  title                 String
-  description           String?
-  dataOrigin            DataOrigin                              @map("data_origin")
-  region                Unsupported("geometry(Geometry,4326)")?
-  status                String                                  @default("OPEN")
-  createdAt             DateTime                                @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt             DateTime                                @default(now()) @map("updated_at") @db.Timestamptz
-  metadata              Json                                    @default("{}")
-  scenes                Scene[]
-  runs                  AnalysisRun[]
-  environmentalDatasets EnvironmentalDataset[]
-  aisDatasets           AisDataset[]
-
-  @@map("cases")
+enum artifact_role {
+  SCIENTIFIC
+  DASHBOARD
+  HANDOFF
+  REPORT
+  MODEL
+  DATASET
 }
 
-model Scene {
-  id                   String                                 @id @default(dbgenerated("gen_random_uuid()")) @map("scene_id") @db.Uuid
-  caseId               String                                 @map("case_id") @db.Uuid
-  externalSceneId      String                                 @map("external_scene_id")
-  sensor               String
-  acquisitionTimeUtc   DateTime                               @map("acquisition_time_utc") @db.Timestamptz
-  footprint            Unsupported("geometry(Geometry,4326)")
-  crs                  String
-  dataOrigin           DataOrigin                             @map("data_origin")
-  sourceUri            String?                                @map("source_uri")
-  sourceChecksumSha256 String?                                @map("source_checksum_sha256")
-  metadata             Json                                   @default("{}")
-  createdAt            DateTime                               @default(now()) @map("created_at") @db.Timestamptz
-  case                 Case                                   @relation(fields: [caseId], references: [id])
-  runs                 AnalysisRun[]
-
-  @@unique([caseId, externalSceneId])
-  @@map("scenes")
+enum decision_kind {
+  INCLUDED
+  EXCLUDED
 }
 
-model AnalysisRun {
-  id                    String            @id @default(dbgenerated("gen_random_uuid()")) @map("analysis_run_id") @db.Uuid
-  caseId                String            @map("case_id") @db.Uuid
-  sceneId               String?           @map("scene_id") @db.Uuid
-  phase                 PhaseCode
-  status                RunStatus         @default(QUEUED)
-  dataOrigin            DataOrigin        @map("data_origin")
-  retryOfRunId          String?           @map("retry_of_run_id") @db.Uuid
-  idempotencyKey        String?           @map("idempotency_key")
-  inputContractVersion  String            @map("input_contract_version")
-  outputContractVersion String?           @map("output_contract_version")
-  configHash            String            @map("config_hash")
-  codeVersion           String            @map("code_version")
-  requestedBy           String?           @map("requested_by")
-  startedAt             DateTime?         @map("started_at") @db.Timestamptz
-  finishedAt            DateTime?         @map("finished_at") @db.Timestamptz
-  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz
-  inputSnapshot         Json              @map("input_snapshot")
-  provenance            Json              @default("{}")
-  case                  Case              @relation(fields: [caseId], references: [id])
-  scene                 Scene?            @relation(fields: [sceneId], references: [id])
-  retryOf               AnalysisRun?      @relation("RunRetry", fields: [retryOfRunId], references: [id])
-  retries               AnalysisRun[]     @relation("RunRetry")
-  events                RunEvent[]
-  jobs                  JobExecution[]
-  artifacts             Artifact[]
-  warnings              RunWarning[]
-  layers                DashboardLayer[]
-  timelineFrames        TimelineFrame[]
-  phase1Result          Phase1Result?
-  phase2Result          Phase2Result?
-  candidates            Phase3Candidate[]
-
-  @@index([caseId, phase, status])
-  @@index([sceneId])
-  @@map("analysis_runs")
+enum evidence_confidence {
+  HIGH
+  MEDIUM
+  LOW
+  INSUFFICIENT
 }
 
-model RunEvent {
-  id              BigInt      @id @default(autoincrement()) @map("run_event_id")
-  analysisRunId   String      @map("analysis_run_id") @db.Uuid
-  status          RunStatus
-  stage           String
-  progressPercent Decimal?    @map("progress_percent") @db.Decimal(5, 2)
-  safeMessage     String?     @map("safe_message")
-  errorCode       String?     @map("error_code")
-  retryable       Boolean?
-  correlationId   String?     @map("correlation_id")
-  details         Json        @default("{}")
-  occurredAt      DateTime    @default(now()) @map("occurred_at") @db.Timestamptz
-  run             AnalysisRun @relation(fields: [analysisRunId], references: [id])
-
-  @@index([analysisRunId, occurredAt])
-  @@map("run_events")
+enum evidence_kind {
+  ORIGIN
+  TIME
+  CORRIDOR
+  PROXIMITY
+  BEHAVIOUR
+  DATA_QUALITY
+  NEGATIVE
 }
 
-model JobExecution {
-  id             String      @id @default(dbgenerated("gen_random_uuid()")) @map("job_execution_id") @db.Uuid
-  analysisRunId  String      @map("analysis_run_id") @db.Uuid
-  queueName      String      @map("queue_name")
-  bossJobId      String?     @map("boss_job_id") @db.Uuid
-  idempotencyKey String      @unique @map("idempotency_key")
-  attemptNo      Int         @default(1) @map("attempt_no")
-  status         String
-  correlationId  String      @map("correlation_id")
-  availableAt    DateTime?   @map("available_at") @db.Timestamptz
-  startedAt      DateTime?   @map("started_at") @db.Timestamptz
-  completedAt    DateTime?   @map("completed_at") @db.Timestamptz
-  safeError      Json?       @map("safe_error")
-  run            AnalysisRun @relation(fields: [analysisRunId], references: [id])
-
-  @@map("job_executions")
-}
-
-model Artifact {
-  id              String                                  @id @default(dbgenerated("gen_random_uuid()")) @map("artifact_id") @db.Uuid
-  analysisRunId   String                                  @map("analysis_run_id") @db.Uuid
-  role            Unsupported("artifact_role")
-  logicalName     String                                  @map("logical_name")
-  artifactVersion String                                  @map("artifact_version")
-  uri             String
-  mediaType       String                                  @map("media_type")
-  checksumSha256  String                                  @map("checksum_sha256")
-  sizeBytes       BigInt?                                 @map("size_bytes")
-  bounds          Unsupported("geometry(Geometry,4326)")?
-  timeStartUtc    DateTime?                               @map("time_start_utc") @db.Timestamptz
-  timeEndUtc      DateTime?                               @map("time_end_utc") @db.Timestamptz
-  metadata        Json                                    @default("{}")
-  createdAt       DateTime                                @default(now()) @map("created_at") @db.Timestamptz
-  run             AnalysisRun                             @relation(fields: [analysisRunId], references: [id])
-  layers          DashboardLayer[]
-  frames          TimelineFrame[]
-
-  @@unique([analysisRunId, logicalName, artifactVersion])
-  @@map("artifacts")
-}
-
-model RunWarning {
-  id            String      @id @default(dbgenerated("gen_random_uuid()")) @map("warning_id") @db.Uuid
-  analysisRunId String      @map("analysis_run_id") @db.Uuid
-  code          String
-  severity      String
-  message       String
-  stage         String?
-  details       Json        @default("{}")
-  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz
-  run           AnalysisRun @relation(fields: [analysisRunId], references: [id])
-
-  @@map("run_warnings")
-}
-
-model DashboardLayer {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @map("dashboard_layer_id") @db.Uuid
-  analysisRunId    String             @map("analysis_run_id") @db.Uuid
-  artifactId       String             @map("artifact_id") @db.Uuid
-  layerKey         String             @map("layer_key")
-  kind             String
-  role             String
-  visibleByDefault Boolean            @default(false) @map("visible_by_default")
-  displayOrder     Int                @default(0) @map("display_order")
-  style            Json               @default("{}")
-  availability     AvailabilityStatus @default(AVAILABLE)
-  run              AnalysisRun        @relation(fields: [analysisRunId], references: [id])
-  artifact         Artifact           @relation(fields: [artifactId], references: [id])
-  frames           TimelineFrame[]
-
-  @@unique([analysisRunId, layerKey])
-  @@map("dashboard_layers")
-}
-
-model TimelineFrame {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @map("timeline_frame_id") @db.Uuid
-  analysisRunId    String             @map("analysis_run_id") @db.Uuid
-  dashboardLayerId String?            @map("dashboard_layer_id") @db.Uuid
-  frameTimeUtc     DateTime           @map("frame_time_utc") @db.Timestamptz
-  relativeSeconds  Int                @map("relative_seconds")
-  artifactId       String?            @map("artifact_id") @db.Uuid
-  availability     AvailabilityStatus @default(AVAILABLE)
-  metadata         Json               @default("{}")
-  run              AnalysisRun        @relation(fields: [analysisRunId], references: [id])
-  layer            DashboardLayer?    @relation(fields: [dashboardLayerId], references: [id])
-  artifact         Artifact?          @relation(fields: [artifactId], references: [id])
-
-  @@unique([analysisRunId, dashboardLayerId, frameTimeUtc])
-  @@map("timeline_frames")
-}
-
-model Phase1Result {
-  analysisRunId           String             @id @map("analysis_run_id") @db.Uuid
-  modelVersionId          String             @map("model_version_id") @db.Uuid
-  observationTimeUtc      DateTime           @map("observation_time_utc") @db.Timestamptz
-  sceneMetricAvailability AvailabilityStatus @map("scene_metric_availability")
-  detectionCount          Int                @default(0) @map("detection_count")
-  summary                 Json               @default("{}")
-  run                     AnalysisRun        @relation(fields: [analysisRunId], references: [id])
-  modelVersion            ModelVersion       @relation(fields: [modelVersionId], references: [id])
-  detections              DetectionRegion[]
-  metricSets              Phase1MetricSet[]
-  phase2Results           Phase2Result[]
-
-  @@map("phase1_results")
-}
-
-model ModelVersion {
-  id                   String         @id @default(dbgenerated("gen_random_uuid()")) @map("model_version_id") @db.Uuid
-  modelName            String         @map("model_name")
-  semanticVersion      String         @map("semantic_version")
-  stage                String
-  architecture         String
-  framework            String
-  inputProfile         String         @map("input_profile")
-  preprocessingVersion String         @map("preprocessing_version")
-  thresholdVersion     String         @map("threshold_version")
-  thresholdValue       Decimal        @map("threshold_value")
-  packageArtifactId    String?        @map("package_artifact_id") @db.Uuid
-  evaluationSummary    Json           @default("{}") @map("evaluation_summary")
-  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz
-  approvedAt           DateTime?      @map("approved_at") @db.Timestamptz
-  phase1Results        Phase1Result[]
-
-  @@unique([modelName, semanticVersion])
-  @@map("model_versions")
-}
-
-model DetectionRegion {
-  id             String                                  @id @default(dbgenerated("gen_random_uuid()")) @map("detection_region_id") @db.Uuid
-  analysisRunId  String                                  @map("analysis_run_id") @db.Uuid
-  regionNo       Int                                     @map("region_no")
-  classification String                                  @default("OIL_LIKELIHOOD")
-  geometry       Unsupported("geometry(Geometry,4326)")
-  coreGeometry   Unsupported("geometry(Geometry,4326)")? @map("core_geometry")
-  outerGeometry  Unsupported("geometry(Geometry,4326)")? @map("outer_geometry")
-  centroid       Unsupported("geometry(Point,4326)")
-  areaM2         Decimal?                                @map("area_m2")
-  perimeterM     Decimal?                                @map("perimeter_m")
-  orientationDeg Decimal?                                @map("orientation_deg")
-  meanLikelihood Decimal?                                @map("mean_likelihood")
-  properties     Json                                    @default("{}")
-  result         Phase1Result                            @relation(fields: [analysisRunId], references: [analysisRunId])
-
-  @@unique([analysisRunId, regionNo])
-  @@map("detection_regions")
-}
-
-model Phase1MetricSet {
-  id             String             @id @default(dbgenerated("gen_random_uuid()")) @map("phase1_metric_set_id") @db.Uuid
-  analysisRunId  String             @map("analysis_run_id") @db.Uuid
-  context        String
-  datasetVersion String?            @map("dataset_version")
-  availability   AvailabilityStatus
-  sampleCount    Int?               @map("sample_count")
-  metrics        Json               @default("{}")
-  reason         String?
-  result         Phase1Result       @relation(fields: [analysisRunId], references: [analysisRunId])
-
-  @@unique([analysisRunId, context])
-  @@map("phase1_metric_sets")
-}
-
-model EnvironmentalDataset {
-  id             String                                 @id @default(dbgenerated("gen_random_uuid()")) @map("environmental_dataset_id") @db.Uuid
-  caseId         String                                 @map("case_id") @db.Uuid
-  datasetVersion String                                 @map("dataset_version")
-  provider       String
-  productId      String                                 @map("product_id")
-  variables      Json
-  units          Json
-  coverage       Unsupported("geometry(Geometry,4326)")
-  timeStartUtc   DateTime                               @map("time_start_utc") @db.Timestamptz
-  timeEndUtc     DateTime                               @map("time_end_utc") @db.Timestamptz
-  checksumSha256 String                                 @map("checksum_sha256")
-  licenceNote    String?                                @map("licence_note")
-  dataOrigin     DataOrigin                             @map("data_origin")
-  metadata       Json                                   @default("{}")
-  case           Case                                   @relation(fields: [caseId], references: [id])
-  phase2Results  Phase2Result[]
-
-  @@unique([caseId, datasetVersion])
-  @@map("environmental_datasets")
-}
-
-model Phase2Result {
-  analysisRunId            String                                  @id @map("analysis_run_id") @db.Uuid
-  phase1RunId              String                                  @map("phase1_run_id") @db.Uuid
-  environmentalDatasetId   String                                  @map("environmental_dataset_id") @db.Uuid
-  detectionTimeUtc         DateTime                                @map("detection_time_utc") @db.Timestamptz
-  releaseStartUtc          DateTime                                @map("release_start_utc") @db.Timestamptz
-  releaseEndUtc            DateTime                                @map("release_end_utc") @db.Timestamptz
-  timeBufferMinutes        Int                                     @map("time_buffer_minutes")
-  searchRegion             Unsupported("geometry(Geometry,4326)")  @map("search_region")
-  spatialBufferM           Decimal                                 @map("spatial_buffer_m")
-  hindcastCorridor         Unsupported("geometry(Geometry,4326)")? @map("hindcast_corridor")
-  evidenceMode             String                                  @map("evidence_mode")
-  originEvidenceArtifactId String?                                 @map("origin_evidence_artifact_id") @db.Uuid
-  summary                  Json                                    @default("{}")
-  run                      AnalysisRun                             @relation(fields: [analysisRunId], references: [id])
-  phase1Result             Phase1Result                            @relation(fields: [phase1RunId], references: [analysisRunId])
-  environmentalDataset     EnvironmentalDataset                    @relation(fields: [environmentalDatasetId], references: [id])
-  scenarios                DriftScenario[]
-  originRegions            OriginRegion[]
-  reconstructionMetrics    ReconstructionMetric[]
-
-  @@map("phase2_results")
-}
-
-model DriftScenario {
-  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @map("drift_scenario_id") @db.Uuid
-  analysisRunId        String                @map("analysis_run_id") @db.Uuid
-  scenarioCode         String                @map("scenario_code")
-  candidateAgeHours    Decimal?              @map("candidate_age_hours")
-  particleCount        Int                   @map("particle_count")
-  randomSeed           BigInt                @map("random_seed")
-  direction            String
-  forcingPerturbation  Json                  @default("{}") @map("forcing_perturbation")
-  boundaryVariant      String?               @map("boundary_variant")
-  oilScenario          Json?                 @map("oil_scenario")
-  configHash           String                @map("config_hash")
-  status               String
-  result               Phase2Result          @relation(fields: [analysisRunId], references: [analysisRunId])
-  reconstructionMetric ReconstructionMetric?
-
-  @@unique([analysisRunId, scenarioCode])
-  @@map("drift_scenarios")
-}
-
-model OriginRegion {
-  id                String                                 @id @default(dbgenerated("gen_random_uuid()")) @map("origin_region_id") @db.Uuid
-  analysisRunId     String                                 @map("analysis_run_id") @db.Uuid
-  regionCode        String                                 @map("region_code")
-  contourLevel      Int?                                   @map("contour_level")
-  modeRank          Int?                                   @map("mode_rank")
-  geometry          Unsupported("geometry(Geometry,4326)")
-  evidenceValue     Decimal?                               @map("evidence_value")
-  evidenceSemantics String                                 @map("evidence_semantics")
-  releaseStartUtc   DateTime?                              @map("release_start_utc") @db.Timestamptz
-  releaseEndUtc     DateTime?                              @map("release_end_utc") @db.Timestamptz
-  provenance        Json                                   @default("{}")
-  result            Phase2Result                           @relation(fields: [analysisRunId], references: [analysisRunId])
-
-  @@unique([analysisRunId, regionCode])
-  @@map("origin_regions")
-}
-
-model ReconstructionMetric {
-  id                      String        @id @default(dbgenerated("gen_random_uuid()")) @map("reconstruction_metric_id") @db.Uuid
-  analysisRunId           String        @map("analysis_run_id") @db.Uuid
-  driftScenarioId         String        @unique @map("drift_scenario_id") @db.Uuid
-  centroidErrorM          Decimal?      @map("centroid_error_m")
-  iou                     Decimal?
-  containment             Decimal?
-  orientationErrorDeg     Decimal?      @map("orientation_error_deg")
-  areaErrorRatio          Decimal?      @map("area_error_ratio")
-  forwardConsistencyScore Decimal?      @map("forward_consistency_score")
-  metricVersion           String        @map("metric_version")
-  details                 Json          @default("{}")
-  result                  Phase2Result  @relation(fields: [analysisRunId], references: [analysisRunId])
-  scenario                DriftScenario @relation(fields: [driftScenarioId], references: [id])
-
-  @@unique([analysisRunId, driftScenarioId])
-  @@map("reconstruction_metrics")
-}
-
-model AisDataset {
-  id                   String                                 @id @default(dbgenerated("gen_random_uuid()")) @map("ais_dataset_id") @db.Uuid
-  caseId               String                                 @map("case_id") @db.Uuid
-  datasetVersion       String                                 @map("dataset_version")
-  provider             String
-  sourceId             String                                 @map("source_id")
-  licenceNote          String                                 @map("licence_note")
-  dataOrigin           DataOrigin                             @map("data_origin")
-  coverage             Unsupported("geometry(Geometry,4326)")
-  timeStartUtc         DateTime                               @map("time_start_utc") @db.Timestamptz
-  timeEndUtc           DateTime                               @map("time_end_utc") @db.Timestamptz
-  checksumSha256       String                                 @map("checksum_sha256")
-  publicIdentityPolicy String                                 @map("public_identity_policy")
-  metadata             Json                                   @default("{}")
-  case                 Case                                   @relation(fields: [caseId], references: [id])
-  ingests              AisIngest[]
-  identities           RestrictedVesselIdentity[]
-
-  @@unique([caseId, datasetVersion])
-  @@map("ais_datasets")
-}
-
-model AisIngest {
-  id             String     @id @default(dbgenerated("gen_random_uuid()")) @map("ais_ingest_id") @db.Uuid
-  aisDatasetId   String     @map("ais_dataset_id") @db.Uuid
-  ingestVersion  String     @map("ingest_version")
-  rawRowCount    BigInt     @map("raw_row_count")
-  cleanRowCount  BigInt     @map("clean_row_count")
-  duplicateCount BigInt     @default(0) @map("duplicate_count")
-  rejectedCount  BigInt     @default(0) @map("rejected_count")
-  qualitySummary Json       @default("{}") @map("quality_summary")
-  configHash     String     @map("config_hash")
-  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz
-  dataset        AisDataset @relation(fields: [aisDatasetId], references: [id])
-
-  @@unique([aisDatasetId, ingestVersion])
-  @@map("ais_ingests")
-}
-
-model RestrictedVesselIdentity {
-  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @map("identity_id") @db.Uuid
-  aisDatasetId       String            @map("ais_dataset_id") @db.Uuid
-  mmsi               String?
-  providerVesselId   String?           @map("provider_vessel_id")
-  approvedMetadata   Json              @default("{}") @map("approved_metadata")
-  restrictedMetadata Json              @default("{}") @map("restricted_metadata")
-  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz
-  dataset            AisDataset        @relation(fields: [aisDatasetId], references: [id])
-  candidates         Phase3Candidate[]
-
-  @@unique([aisDatasetId, mmsi])
-  @@map("restricted_vessel_identities")
-}
-
-model Phase3Candidate {
-  id                  String                   @id @default(dbgenerated("gen_random_uuid()")) @map("candidate_id") @db.Uuid
-  analysisRunId       String                   @map("analysis_run_id") @db.Uuid
-  identityId          String                   @map("identity_id") @db.Uuid
-  candidateSetVersion String                   @map("candidate_set_version")
-  publicMetadata      Json                     @default("{}") @map("public_metadata")
-  createdAt           DateTime                 @default(now()) @map("created_at") @db.Timestamptz
-  run                 AnalysisRun              @relation(fields: [analysisRunId], references: [id])
-  identity            RestrictedVesselIdentity @relation(fields: [identityId], references: [id])
-  features            CandidateFeature[]
-  evidenceEvents      EvidenceEvent[]
-  scores              CandidateScore[]
-
-  @@unique([analysisRunId, identityId])
-  @@map("phase3_candidates")
-}
-
-model CandidateFeature {
-  id              String                       @id @default(dbgenerated("gen_random_uuid()")) @map("candidate_feature_id") @db.Uuid
-  candidateId     String                       @map("candidate_id") @db.Uuid
-  featureName     String                       @map("feature_name")
-  featureVersion  String                       @map("feature_version")
-  rawValue        Decimal?                     @map("raw_value")
-  normalizedValue Decimal?                     @map("normalized_value")
-  unit            String?
-  availability    AvailabilityStatus
-  sourceKind      Unsupported("point_source")? @map("source_kind")
-  confidenceCap   Decimal?                     @map("confidence_cap")
-  reason          String?
-  provenance      Json                         @default("{}")
-  candidate       Phase3Candidate              @relation(fields: [candidateId], references: [id])
-
-  @@unique([candidateId, featureName, featureVersion])
-  @@map("candidate_features")
-}
-
-model EvidenceEvent {
-  id           String                                  @id @default(dbgenerated("gen_random_uuid()")) @map("evidence_event_id") @db.Uuid
-  candidateId  String                                  @map("candidate_id") @db.Uuid
-  kind         Unsupported("evidence_kind")
-  eventCode    String                                  @map("event_code")
-  eventTimeUtc DateTime?                               @map("event_time_utc") @db.Timestamptz
-  timeEndUtc   DateTime?                               @map("time_end_utc") @db.Timestamptz
-  geometry     Unsupported("geometry(Geometry,4326)")?
-  rawValue     Decimal?                                @map("raw_value")
-  unit         String?
-  sourceKind   Unsupported("point_source")?            @map("source_kind")
-  explanation  String
-  details      Json                                    @default("{}")
-  candidate    Phase3Candidate                         @relation(fields: [candidateId], references: [id])
-
-  @@map("evidence_events")
-}
-
-model CandidateScore {
-  id                 String                             @id @default(dbgenerated("gen_random_uuid()")) @map("candidate_score_id") @db.Uuid
-  candidateId        String                             @map("candidate_id") @db.Uuid
-  scoreVersion       String                             @map("score_version")
-  configHash         String                             @map("config_hash")
-  investigativeScore Decimal                            @map("investigative_score")
-  rank               Int
-  confidence         Unsupported("evidence_confidence")
-  positiveTotal      Decimal                            @map("positive_total")
-  negativeTotal      Decimal                            @default(0) @map("negative_total")
-  confidenceCap      Decimal?                           @map("confidence_cap")
-  explanation        String
-  createdAt          DateTime                           @default(now()) @map("created_at") @db.Timestamptz
-  candidate          Phase3Candidate                    @relation(fields: [candidateId], references: [id])
-  components         ScoreComponent[]
-
-  @@unique([candidateId, scoreVersion])
-  @@map("candidate_scores")
-}
-
-model ScoreComponent {
-  id               String         @id @default(dbgenerated("gen_random_uuid()")) @map("score_component_id") @db.Uuid
-  candidateScoreId String         @map("candidate_score_id") @db.Uuid
-  componentName    String         @map("component_name")
-  rawValue         Decimal?       @map("raw_value")
-  normalizedValue  Decimal?       @map("normalized_value")
-  weight           Decimal
-  contribution     Decimal
-  isDeduction      Boolean        @default(false) @map("is_deduction")
-  capApplied       Decimal?       @map("cap_applied")
-  reason           String
-  score            CandidateScore @relation(fields: [candidateScoreId], references: [id])
-
-  @@unique([candidateScoreId, componentName])
-  @@map("score_components")
+enum point_source {
+  OBSERVED
+  INTERPOLATED
 }
