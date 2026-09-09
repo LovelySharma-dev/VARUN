@@ -1,34 +1,96 @@
-DO THIS IS LAPTOP TERMINAL - npm install -g pnpm
+================================================================================
+  🌊 VARUN-ASTRA (SIH-26143) — COMPLETE COMMANDS CHEAT SHEET
+================================================================================
 
-# 1. Setup Environment Configuration
-cp .env.example .env
-
-# 2. Start PostgreSQL / PostGIS Database (Make sure Docker Desktop is open)
-docker compose up -d
-
-# 3. Install Monorepo Dependencies
-pnpm install
-
-# 4. Sync Python Environment (ML Phase 1)
-uv sync --directory ml/phase1/training
-
-# 5. Start Development Server (Runs Next.js Web & NestJS API in parallel)
+--------------------------------------------------------------------------------
+1. 🚀 ONE-COMMAND FULL PLATFORM LAUNCH (Web + API)
+--------------------------------------------------------------------------------
+# Starts Next.js Web Dashboard (Port 3000) & NestJS REST API Gateway (Port 3001)
 pnpm dev
 
-# 6. Run Offline Demo
-pnpm demo:offline
+- Web Dashboard URL : http://localhost:3000
+- API Gateway URL   : http://localhost:3001/api/v1
 
-# 7. Run Phase 1 Model Inference (Oil Spill Detection)
-1st Install libraries
-pip install torch torchvision rasterio numpy matplotlib
 
-# Option A: Batch script (CMD / PowerShell)
-.\run_model.ps1 -image data/sample_sar_image.tif -output output_mask.tif
+--------------------------------------------------------------------------------
+2. 🔬 START SCIENTIFIC PYTHON ENGINES (Run each in its own terminal)
+--------------------------------------------------------------------------------
+# Phase 1: SAR Oil Spill Detection Engine (FastAPI on Port 8101)
+python -m uvicorn app.main:app --app-dir services/detection-engine --host 0.0.0.0 --port 8101 --reload
 
-# Option B: Direct pnpm / python command
-pnpm infer:phase1 --image <path_to_image.tif> --output output_mask.tif
-# or
-python ml/phase1/infer.py --image <path_to_image.tif> --model models/phase1/unet_oil_spill_v0.1.pth --output output_mask.tif
+# Phase 2: Hydrodynamic Drift Forecasting Engine (FastAPI on Port 8102)
+python -m uvicorn app.main:app --app-dir services/drift-engine --host 0.0.0.0 --port 8102 --reload
 
-# 8. Run test of model
+# Phase 3: AIS Vessel Attribution & LSTM Engine (FastAPI on Port 8103)
+services\ais-engine\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir services/ais-engine --host 0.0.0.0 --port 8103 --reload
+
+
+--------------------------------------------------------------------------------
+3. 🛰️ RUN PHASE 1 MODEL INFERENCE (Standalone CLI)
+--------------------------------------------------------------------------------
+# PowerShell Helper Script:
+.\run_model.ps1 -image data/sample_sar_image.tif -output output_spill_detected.tif
+
+# Or Direct Python Command:
+python ml/phase1/infer.py --image data/sample_sar_image.tif --model models/phase1/unet_oil_spill_v0.1.pth --output output_spill_detected.tif
+
+
+--------------------------------------------------------------------------------
+4. 🧪 RUN TESTS & VERIFICATION SUITES
+--------------------------------------------------------------------------------
+# Run Full Monorepo Build, Lint & Test (Turbo):
+pnpm turbo run lint test build
+
+# Run NestJS API Tests:
+pnpm --filter api test
+
+# Run Next.js Web Build & Lint:
+pnpm --filter web build
+pnpm --filter web lint
+
+# Run Phase 1 ML & Detection Tests:
 python -m pytest ml/phase1/tests/ -v
+python -m pytest services/detection-engine/tests/ -v
+python -m pytest packages/python/phase1-core/tests/ -v
+
+# Run Phase 2 Drift Engine Tests:
+python -m pytest services/drift-engine/tests/ -v
+
+# Run Phase 3 AIS Attribution Tests (all 29 tests):
+services\ais-engine\.venv\Scripts\python.exe -m pytest services/ais-engine/tests/ -v
+
+# Run Phase 3 Full Reproducibility Audit:
+services\ais-engine\.venv\Scripts\python.exe services/ais-engine/scripts/run_phase3_reproducibility.py
+
+
+--------------------------------------------------------------------------------
+5. 🗄️ DATABASE & DOCKER (Optional - for live PostGIS persistence)
+--------------------------------------------------------------------------------
+# 1. Start PostGIS Docker Container (Open Docker Desktop first):
+docker compose up -d
+
+# 2. Push Prisma Schema to PostgreSQL:
+pnpm --filter api prisma db push
+
+# 3. Open Prisma Visual Database Studio (Port 5555):
+pnpm --filter api prisma studio
+
+# 4. Stop Docker Database:
+docker compose down
+
+
+--------------------------------------------------------------------------------
+6. 📦 INSTALLATION / RE-INSTALLATION COMMANDS
+--------------------------------------------------------------------------------
+# Install Node Packages:
+pnpm install
+
+# Install All Python Dependencies:
+pip install -r requirements.txt
+
+# Or install per phase:
+pip install -r requirements/requirements-phase1.txt
+pip install -r requirements/requirements-phase2.txt
+pip install -r requirements/requirements-phase3.txt
+pip install -r requirements/requirements-dev.txt
+================================================================================

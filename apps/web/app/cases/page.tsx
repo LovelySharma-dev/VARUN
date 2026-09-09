@@ -34,7 +34,7 @@ export default function CaseOverviewPage() {
     );
   }
 
-  const { caseSummary, runs, detection, drift, attribution } = data;
+  const { caseSummary, detection, drift, attribution } = data;
 
   return (
     <DashboardLayout caseSummary={caseSummary}>
@@ -192,7 +192,7 @@ export default function CaseOverviewPage() {
               {attribution.privacyDisclaimer}
             </p>
             <div className="p-3 bg-[#030d1c] border border-cyan-900/40 rounded text-slate-400 text-[11px] italic">
-              "{attribution.legalDisclaimer}"
+              &quot;{attribution.legalDisclaimer}&quot;
             </div>
           </div>
         </div>

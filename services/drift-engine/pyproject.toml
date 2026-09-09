@@ -19,21 +19,26 @@ dependencies = [
     "scipy>=1.14.0",
     "xarray>=2024.02.0",
     "netCDF4>=1.6.5",
+
     # Oil drift simulation
     "opendrift==1.14.11",
     "opendrift[extra]>=1.14.11",
+
     # Geometry and spatial
     "shapely>=2.0.0",
     "geopandas>=0.14.0",
     "pyproj>=3.6.0",
+
     # Data handling
     "pandas>=2.2.0",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
+
     # API
     "fastapi>=0.108.0",
     "uvicorn[standard]>=0.27.0",
     "httpx>=0.25.0",
+
     # Utilities
     "python-dotenv>=1.0.0",
     "click>=8.1.0",
@@ -49,6 +54,7 @@ testing = [
     "pytest-asyncio>=0.23.0",
     "pytest-timeout>=2.2.0",
 ]
+
 dev = [
     "ruff>=0.2.0",
     "black>=24.1.0",
@@ -72,15 +78,17 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short --strict-markers"
+
 markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
+    "slow: marks tests that require longer execution",
+    "integration: marks integration tests",
     "requires_forcing: marks tests that require forcing data",
 ]
 
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+
 exclude = [
     ".git",
     ".venv",
@@ -92,16 +100,17 @@ exclude = [
 
 [tool.ruff.lint]
 select = [
-    "E",     # pycodestyle errors
-    "W",     # pycodestyle warnings
-    "F",     # Pyflakes
-    "I",     # isort
-    "N",     # pep8-naming
-    "UP",    # pyupgrade
-    "RUF",   # Ruff-specific rules
+    "E",
+    "W",
+    "F",
+    "I",
+    "N",
+    "UP",
+    "RUF",
 ]
+
 ignore = [
-    "E501",  # line too long (handled by formatter)
+    "E501",
 ]
 
 [tool.ruff.lint.isort]

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { CasesResponseSchema, CaseSchema } from '../contracts/schemas';
+import { CasesResponseSchema } from '../contracts/schemas';
 import { validateResponse } from '../contracts/validate';
 
 @Injectable()

@@ -1,6 +1,6 @@
-﻿import { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { createHash, randomUUID, createHash as sha256Hash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { PgBoss } from 'pg-boss';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -57,7 +57,7 @@ export class Phase3Service {
         if (job) await this.execute(job.data);
       });
       this.logger.log('Phase-3 pg-boss queue initialized.');
-    } catch (error) {
+    } catch (_error) {
       this.logger.warn('Phase-3 queue unavailable; Phase-3 creation disabled.');
       this.boss = null;
     }

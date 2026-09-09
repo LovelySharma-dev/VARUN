@@ -208,7 +208,7 @@ export default function AttributionPage({ params }: { params: Promise<{ caseId: 
 
           {/* LEGAL DISCLAIMER FOOTER */}
           <div className="p-3 bg-[#030d1c] border border-cyan-900/40 rounded text-slate-500 text-[10px] italic">
-            "{attribution.legalDisclaimer}"
+            &quot;{attribution.legalDisclaimer}&quot;
           </div>
         </div>
       </div>
