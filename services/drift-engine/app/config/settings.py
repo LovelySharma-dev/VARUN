@@ -32,13 +32,13 @@ class Phase2Settings(BaseSettings):
     """Candidate release ages to simulate (hours before observation)"""
 
     # == Simulation parameters ==
-    simulation_time_step_hours: float = 1.0
+    simulation_time_step_hours: float = 0.25
     """Integration time step (hours)"""
 
-    output_interval_hours: float = 1.0
+    output_interval_hours: float = 0.5
     """Output interval for trajectory storage (hours)"""
 
-    forecast_duration_hours: float = 12.0
+    forecast_duration_hours: float = 24.0
     """Forward forecast duration from observation time (hours)"""
 
     # == Uncertainty parameters ==

@@ -53,7 +53,7 @@ class Phase2Runner:
         forcing_config: ForcingConfig,
         particle_count: int = 1500,
         release_ages_hours: Optional[list[int]] = None,
-        forecast_hours: float = 12.0,
+        forecast_hours: float = 24.0,
     ) -> dict:
         """
         Run complete Phase 2 workflow.
@@ -151,14 +151,17 @@ class Phase2Runner:
 
             for ra in successful_ages:
                 try:
+                    simulation_result = ra.simulation_result
+                    if simulation_result is None:
+                        continue
                     output_file = hindcast_dir / f"release-{ra.release_age_hours}h.nc"
                     ds = xr.Dataset(
                         {
-                            "lon": (["time", "trajectory"], ra.simulation_result.trajectory_lons),
-                            "lat": (["time", "trajectory"], ra.simulation_result.trajectory_lats),
+                            "lon": (["time", "trajectory"], simulation_result.trajectory_lons),
+                            "lat": (["time", "trajectory"], simulation_result.trajectory_lats),
                         },
                         coords={
-                            "time": [t.isoformat() for t in ra.simulation_result.trajectory_times],
+                            "time": [t.isoformat() for t in simulation_result.trajectory_times],
                         },
                     )
                     write_netcdf_dataset(ds, output_file)
