@@ -27,7 +27,11 @@ from app.utils import normalize_simulation_time
 
 logger = logging.getLogger(__name__)
 
-# Variable 
+
+# ============================================================
+# Variable aliases
+# ============================================================
+
 CURRENT_U_NAMES = {
     "uo",
     "eastward_sea_water_velocity",
@@ -59,14 +63,13 @@ WIND_V_NAMES = {
 
 LAT_NAMES = ["latitude", "lat", "y"]
 LON_NAMES = ["longitude", "lon", "x"]
-
-TIME_NAMES = {
-    "time",
-    "valid_time",
-}
+TIME_NAMES = ["time", "valid_time", "time_counter"]
 
 
+# ============================================================
 # Public API
+# ============================================================
+
 def audit_forcing_file(
     file_path: Path,
     required_type: Optional[str] = None,
@@ -84,8 +87,8 @@ def audit_forcing_file(
                 "wind"
                 None
 
-            If None, the file is accepted if it contains at least one
-            complete forcing pair.
+            If None, the file is accepted if it contains at least
+            one complete forcing pair.
 
     Returns:
         ForcingAuditResult
@@ -104,29 +107,59 @@ def audit_forcing_file(
         is_valid_netcdf=False,
     )
 
+    # ========================================================
+    # File checks
+    # ========================================================
 
     if not file_path.exists():
-        result.errors.append(f"File does not exist: {file_path}")
+        result.errors.append(
+            f"File does not exist: {file_path}"
+        )
         return result
 
     if not file_path.is_file():
-        result.errors.append(f"Not a file: {file_path}")
+        result.errors.append(
+            f"Not a file: {file_path}"
+        )
         return result
 
-    result.file_size_mb = file_path.stat().st_size / (1024 * 1024)
+    result.file_size_mb = (
+        file_path.stat().st_size / (1024 * 1024)
+    )
+
+    # ========================================================
+    # Open NetCDF
+    # ========================================================
 
     try:
         ds = xr.open_dataset(file_path)
     except Exception as exc:
-        result.errors.append(f"Cannot open as NetCDF: {exc}")
+        result.errors.append(
+            f"Cannot open as NetCDF: {exc}"
+        )
         return result
 
     result.is_valid_netcdf = True
 
     try:
-        lat_name = _find_coordinate(ds, LAT_NAMES)
-        lon_name = _find_coordinate(ds, LON_NAMES)
-        time_name = _find_coordinate(ds, TIME_NAMES)
+        # ====================================================
+        # Coordinates
+        # ====================================================
+
+        lat_name = _find_coordinate(
+            ds,
+            LAT_NAMES,
+        )
+
+        lon_name = _find_coordinate(
+            ds,
+            LON_NAMES,
+        )
+
+        time_name = _find_coordinate(
+            ds,
+            TIME_NAMES,
+        )
 
         has_lat = lat_name is not None
         has_lon = lon_name is not None
@@ -139,22 +172,48 @@ def audit_forcing_file(
         }
 
         if not has_lat:
-            result.errors.append("No latitude coordinate found")
+            result.errors.append(
+                "No latitude coordinate found"
+            )
 
         if not has_lon:
-            result.errors.append("No longitude coordinate found")
+            result.errors.append(
+                "No longitude coordinate found"
+            )
 
         if not has_time:
-            result.errors.append("No time coordinate found")
+            result.errors.append(
+                "No time coordinate found"
+            )
+
+        # ====================================================
+        # Spatial bounds
+        # ====================================================
 
         if has_lat and has_lon:
-            lat_data = np.asarray(ds[lat_name].values)
-            lon_data = np.asarray(ds[lon_name].values)
+            lat_data = np.asarray(
+                ds[lat_name].values
+            )
 
-            lat_min = float(np.nanmin(lat_data))
-            lat_max = float(np.nanmax(lat_data))
-            lon_min = float(np.nanmin(lon_data))
-            lon_max = float(np.nanmax(lon_data))
+            lon_data = np.asarray(
+                ds[lon_name].values
+            )
+
+            lat_min = float(
+                np.nanmin(lat_data)
+            )
+
+            lat_max = float(
+                np.nanmax(lat_data)
+            )
+
+            lon_min = float(
+                np.nanmin(lon_data)
+            )
+
+            lon_max = float(
+                np.nanmax(lon_data)
+            )
 
             result.spatial_bounds = SpatialBounds(
                 lat_min=lat_min,
@@ -163,17 +222,35 @@ def audit_forcing_file(
                 lon_max=lon_max,
             )
 
-            if lat_data.ndim == 1 and not _is_monotonic(lat_data):
-                result.warnings.append("Latitude is not monotonic")
+            if (
+                lat_data.ndim == 1
+                and not _is_monotonic(lat_data)
+            ):
+                result.warnings.append(
+                    "Latitude is not monotonic"
+                )
 
-            if lon_data.ndim == 1 and not _is_monotonic(lon_data):
-                result.warnings.append("Longitude is not monotonic")
+            if (
+                lon_data.ndim == 1
+                and not _is_monotonic(lon_data)
+            ):
+                result.warnings.append(
+                    "Longitude is not monotonic"
+                )
+
+        # ====================================================
+        # Temporal bounds
+        # ====================================================
 
         if has_time:
-            time_data = np.asarray(ds[time_name].values)
+            time_data = np.asarray(
+                ds[time_name].values
+            )
 
             if len(time_data) == 0:
-                result.errors.append("Time coordinate is empty")
+                result.errors.append(
+                    "Time coordinate is empty"
+                )
 
             elif len(time_data) == 1:
                 result.errors.append(
@@ -190,6 +267,7 @@ def audit_forcing_file(
                         time_start=t,
                         time_end=t,
                     )
+
                 except Exception as exc:
                     result.errors.append(
                         f"Cannot parse time coordinate: {exc}"
@@ -212,7 +290,9 @@ def audit_forcing_file(
                         time_end=time_end,
                     )
 
-                    if not _is_time_monotonic(time_data):
+                    if not _is_time_monotonic(
+                        time_data
+                    ):
                         result.errors.append(
                             "Time is not monotonic"
                         )
@@ -221,6 +301,10 @@ def audit_forcing_file(
                     result.errors.append(
                         f"Cannot parse time coordinate: {exc}"
                     )
+
+        # ====================================================
+        # Find forcing variables
+        # ====================================================
 
         current_u = _find_variable(
             ds,
@@ -243,16 +327,28 @@ def audit_forcing_file(
         )
 
         if current_u:
-            result.current_variables_found.append(current_u)
+            result.current_variables_found.append(
+                current_u
+            )
 
         if current_v:
-            result.current_variables_found.append(current_v)
+            result.current_variables_found.append(
+                current_v
+            )
 
         if wind_u:
-            result.wind_variables_found.append(wind_u)
+            result.wind_variables_found.append(
+                wind_u
+            )
 
         if wind_v:
-            result.wind_variables_found.append(wind_v)
+            result.wind_variables_found.append(
+                wind_v
+            )
+
+        # ====================================================
+        # Role-specific validation
+        # ====================================================
 
         if required_type == "current":
 
@@ -290,22 +386,34 @@ def audit_forcing_file(
 
             if not current_u:
                 result.warnings.append(
-                    "No eastward current velocity found (wind-only file)"
+                    "No eastward current velocity found "
+                    "(wind-only file)"
                 )
 
             if not current_v:
                 result.warnings.append(
-                    "No northward current velocity found (wind-only file)"
+                    "No northward current velocity found "
+                    "(wind-only file)"
                 )
 
         else:
-            has_current_pair = bool(current_u and current_v)
-            has_wind_pair = bool(wind_u and wind_v)
+            has_current_pair = bool(
+                current_u and current_v
+            )
+
+            has_wind_pair = bool(
+                wind_u and wind_v
+            )
 
             if not has_current_pair and not has_wind_pair:
                 result.errors.append(
-                    "No complete current or wind forcing pair found"
+                    "No complete current or wind "
+                    "forcing pair found"
                 )
+
+        # ====================================================
+        # Variable mapping
+        # ====================================================
 
         var_mapping = {}
 
@@ -321,6 +429,10 @@ def audit_forcing_file(
         if wind_v:
             var_mapping[wind_v] = "wind_v"
 
+        # ====================================================
+        # Variable validation
+        # ====================================================
+
         for var_name, standard_name in var_mapping.items():
 
             if var_name not in ds.data_vars:
@@ -333,13 +445,19 @@ def audit_forcing_file(
                 "unknown",
             )
 
-            if units not in {"m/s", "m s-1", "m s**-1"}:
+            if units not in {
+                "m/s",
+                "m s-1",
+                "m s**-1",
+            }:
                 result.warnings.append(
                     f"{var_name} has units '{units}' "
                     f"(expected m/s or m s-1)"
                 )
 
-            data = np.asarray(var.values)
+            data = np.asarray(
+                var.values
+            )
 
             if data.size == 0:
                 result.errors.append(
@@ -347,13 +465,17 @@ def audit_forcing_file(
                 )
                 continue
 
-            if np.issubdtype(data.dtype, np.floating):
+            if np.issubdtype(
+                data.dtype,
+                np.floating,
+            ):
                 missing_count = np.isnan(data).sum()
             else:
                 missing_count = 0
 
             missing_fraction = (
-                float(missing_count) / float(data.size)
+                float(missing_count)
+                / float(data.size)
             )
 
             result.variables[var_name] = VariableInfo(
@@ -370,6 +492,10 @@ def audit_forcing_file(
                     f"{missing_fraction * 100:.1f}% missing"
                 )
 
+        # ====================================================
+        # Final decision
+        # ====================================================
+
         result.passed = (
             result.is_valid_netcdf
             and len(result.errors) == 0
@@ -385,6 +511,10 @@ def audit_forcing_file(
 
     return result
 
+
+# ============================================================
+# Helpers
+# ============================================================
 
 def _find_coordinate(
     ds: xr.Dataset,
@@ -477,6 +607,10 @@ def _is_time_monotonic(
 
         return False
 
+
+# ============================================================
+# CLI
+# ============================================================
 
 def cli_main():
 
