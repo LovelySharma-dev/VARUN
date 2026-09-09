@@ -37,6 +37,7 @@ export interface DriftData {
   originDensityContours: GeoJSON.FeatureCollection<GeoJSON.Polygon>;
   backwardParticleTracks: GeoJSON.FeatureCollection<GeoJSON.MultiLineString | GeoJSON.LineString>;
   forwardForecast: GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.LineString>;
+  statedReleaseRadiusKm?: number;
   currentWindQuality: {
     windDataset: string;
     currentDataset: string;
@@ -62,15 +63,25 @@ export interface CandidateScoreBreakdown {
   totalScore: number;      // sum of above
 }
 
+export interface ReasonCodeItem {
+  code: string;       // e.g. RC-01
+  label: string;      // e.g. Spatial Proximity to Release Zone
+  description: string;// e.g. Closest Point of Approach within 0.6 km of Release Zone A
+  impact: string;     // e.g. HIGH (+29.5 pts)
+  type: "CRITICAL" | "HIGH" | "MEDIUM" | "NEUTRAL";
+}
+
 export interface Candidate {
-  candidateId: string; // Strictly anonymized (e.g. CAND-003), NO raw MMSI on public dashboard
+  candidateId: string; // Strictly anonymized (e.g. CAND-003)
   rank: number;
   vesselType: string;
   investigativeScore: number; // Out of 100
   scoreBreakdown: CandidateScoreBreakdown;
+  reasonCodes: ReasonCodeItem[];
   closestApproach: {
     distanceKm: number;
     timestampUTC: string;
+    coordinates?: [number, number];
   };
   vesselTrack: GeoJSON.Feature<GeoJSON.LineString | GeoJSON.MultiLineString>;
   supportingEvidence: string[];

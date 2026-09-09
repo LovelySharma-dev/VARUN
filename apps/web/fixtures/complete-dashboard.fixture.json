@@ -1,18 +1,18 @@
 {
   "caseSummary": {
     "caseId": "CASE-S1-DEMO-001",
-    "title": "Arabian Sea Offshore Slick Incident",
-    "region": "Bombay High Sector 4 (18.9214° N, 72.8347° E)",
-    "detectionTimestamp": "2026-09-05T08:30:00Z",
+    "title": "Arabian Sea Offshore Crude Slick",
+    "region": "Arabian Sea Offshore Sector (18.9200° N, 72.0100° E)",
+    "detectionTimestamp": "2026-08-20T05:30:00Z",
     "overallStatus": "COMPLETED",
     "phase1Status": "COMPLETED",
     "phase2Status": "COMPLETED",
     "phase3Status": "COMPLETED",
-    "lastUpdated": "2026-09-05T10:15:00Z",
+    "lastUpdated": "2026-08-20T08:15:00Z",
     "offlineReplayAvailable": true,
     "warnings": [
-      "Moderate wind speed (12 knots) on northern boundary may disperse thin sheen",
-      "28-minute AIS reporting gap detected for Candidate CAND-003 during origin window"
+      "Moderate surface currents (0.85 m/s) driving drift South-West",
+      "Sentinel-1 SAR C-Band VV+VH high signal-to-clutter ratio"
     ]
   },
   "runs": {
@@ -41,17 +41,17 @@
     "binaryMaskUrl": "/ship_oil_spill.jpg",
     "spillPolygon": {
       "type": "Feature",
-      "properties": { "name": "Oil Likelihood Region", "confidence": 0.984 },
+      "properties": { "name": "Crude Oil Likelihood Region", "confidence": 0.87 },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
-            [72.8250, 18.9150],
-            [72.8450, 18.9180],
-            [72.8550, 18.9300],
-            [72.8380, 18.9320],
-            [72.8200, 18.9240],
-            [72.8250, 18.9150]
+            [71.9750, 18.8950],
+            [72.0350, 18.9100],
+            [72.0550, 18.9380],
+            [72.0250, 18.9500],
+            [71.9680, 18.9280],
+            [71.9750, 18.8950]
           ]
         ]
       }
@@ -61,21 +61,22 @@
       "properties": { "name": "Spill Centroid" },
       "geometry": {
         "type": "Point",
-        "coordinates": [72.8366, 18.9238]
+        "coordinates": [72.0100, 18.9200]
       }
     },
     "areaKm2": 3.24,
     "perimeterKm": 11.8,
     "slickLengthKm": 6.7,
-    "orientation": "67° ESE",
-    "detectionThreshold": 0.85,
+    "orientation": "67° ENE",
+    "detectionThreshold": 0.56,
     "modelVersion": "U-Net-SAR-v2.4-Sentinel1",
-    "detectionTimestamp": "2026-09-05T08:30:00Z",
+    "detectionTimestamp": "2026-08-20T05:30:00Z",
     "warnings": [
       "Model output represents radar oil-likelihood candidate region; ground truth verification required."
     ]
   },
   "drift": {
+    "statedReleaseRadiusKm": 8.5,
     "hindcastCorridor": {
       "type": "Feature",
       "properties": { "name": "48h Hindcast Corridor" },
@@ -83,15 +84,15 @@
         "type": "Polygon",
         "coordinates": [
           [
-            [72.8366, 18.9238],
-            [72.7100, 18.8400],
-            [72.6400, 18.7800],
-            [72.5800, 18.7100],
-            [72.5200, 18.6700],
-            [72.5800, 18.6400],
-            [72.6800, 18.7200],
-            [72.7800, 18.8000],
-            [72.8366, 18.9238]
+            [72.0100, 18.9200],
+            [71.8600, 18.8000],
+            [71.7200, 18.6800],
+            [71.5800, 18.5200],
+            [71.4800, 18.4200],
+            [71.5500, 18.3800],
+            [71.7000, 18.5200],
+            [71.8800, 18.7200],
+            [72.0100, 18.9200]
           ]
         ]
       }
@@ -101,32 +102,32 @@
       "features": [
         {
           "type": "Feature",
-          "properties": { "name": "High Origin Probability Zone (Origin Zone A)", "density": 0.85 },
+          "properties": { "name": "High Origin Probability Zone A (90% CI)", "density": 0.90, "radiusKm": 8.5 },
           "geometry": {
             "type": "Polygon",
             "coordinates": [
               [
-                [72.5300, 18.7000],
-                [72.5600, 18.7200],
-                [72.5800, 18.7000],
-                [72.5500, 18.6800],
-                [72.5300, 18.7000]
+                [71.5000, 18.4500],
+                [71.5800, 18.5000],
+                [71.6200, 18.4400],
+                [71.5400, 18.4000],
+                [71.5000, 18.4500]
               ]
             ]
           }
         },
         {
           "type": "Feature",
-          "properties": { "name": "Medium Origin Probability Zone (Origin Zone B)", "density": 0.5 },
+          "properties": { "name": "Medium Origin Probability Zone B (75% CI)", "density": 0.75, "radiusKm": 16.0 },
           "geometry": {
             "type": "Polygon",
             "coordinates": [
               [
-                [72.5000, 18.6600],
-                [72.6100, 18.7500],
-                [72.6300, 18.7200],
-                [72.5200, 18.6300],
-                [72.5000, 18.6600]
+                [71.4600, 18.4000],
+                [71.6500, 18.5500],
+                [71.7200, 18.4800],
+                [71.5200, 18.3500],
+                [71.4600, 18.4000]
               ]
             ]
           }
@@ -138,29 +139,43 @@
       "features": [
         {
           "type": "Feature",
-          "properties": { "name": "Particle Ensemble Track 1" },
+          "properties": { "trackId": "PT-01", "weight": 0.95 },
           "geometry": {
             "type": "LineString",
             "coordinates": [
-              [72.8366, 18.9238],
-              [72.7800, 18.8800],
-              [72.7100, 18.8200],
-              [72.6200, 18.7500],
-              [72.5500, 18.7000]
+              [72.0100, 18.9200],
+              [71.8600, 18.8000],
+              [71.7200, 18.6800],
+              [71.5800, 18.5200],
+              [71.5200, 18.4200]
             ]
           }
         },
         {
           "type": "Feature",
-          "properties": { "name": "Particle Ensemble Track 2" },
+          "properties": { "trackId": "PT-02", "weight": 0.88 },
           "geometry": {
             "type": "LineString",
             "coordinates": [
-              [72.8366, 18.9238],
-              [72.7600, 18.8600],
-              [72.6900, 18.8000],
-              [72.6000, 18.7300],
-              [72.5300, 18.6800]
+              [72.0100, 18.9200],
+              [71.8900, 18.7800],
+              [71.7500, 18.6400],
+              [71.6200, 18.4900],
+              [71.5600, 18.4100]
+            ]
+          }
+        },
+        {
+          "type": "Feature",
+          "properties": { "trackId": "PT-03", "weight": 0.82 },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [72.0100, 18.9200],
+              [71.8300, 18.8200],
+              [71.6900, 18.7100],
+              [71.5500, 18.5500],
+              [71.4900, 18.4400]
             ]
           }
         }
@@ -171,16 +186,19 @@
       "features": [
         {
           "type": "Feature",
-          "properties": { "name": "+24h Slick Dispersion Contour" },
+          "properties": { "name": "+24h Slick Dispersion Risk", "risk": "MEDIUM" },
           "geometry": {
             "type": "Polygon",
             "coordinates": [
               [
-                [72.8366, 18.9238],
-                [72.8900, 18.9600],
-                [72.9400, 18.9900],
-                [72.9100, 18.9400],
-                [72.8366, 18.9238]
+                [72.0100, 18.9200],
+                [72.0800, 18.9800],
+                [72.1600, 19.0500],
+                [72.2200, 19.1000],
+                [72.1500, 19.1400],
+                [72.0500, 19.0600],
+                [71.9800, 18.9600],
+                [72.0100, 18.9200]
               ]
             ]
           }
@@ -188,20 +206,20 @@
       ]
     },
     "currentWindQuality": {
-      "windDataset": "NCAR GFS 0.25° Global Atmospheric Model",
-      "currentDataset": "HYCOM 1/12° Ocean Currents",
-      "qualityScore": 92,
-      "coverageGapWarning": "Minor temporal interpolation gap during T-18h to T-14h window."
+      "windDataset": "ECMWF ERA5 Wind Reanalysis (14.2 kts 225° SW)",
+      "currentDataset": "HYCOM 1/12° Global Hydrodynamic Ocean (0.85 m/s 210° SSW)",
+      "qualityScore": 94,
+      "coverageGapWarning": "Optimal meteo-oceanic forcing resolution without spatial coverage gaps."
     },
     "timeSteps": [
-      { "hourOffset": -48, "label": "T - 48h (Origin Start)", "timestampUTC": "2026-09-03T08:30:00Z" },
-      { "hourOffset": -24, "label": "T - 24h (Release Window)", "timestampUTC": "2026-09-04T08:30:00Z" },
-      { "hourOffset": -12, "label": "T - 12h (Drift Corridor)", "timestampUTC": "2026-09-04T20:30:00Z" },
-      { "hourOffset": 0, "label": "T = 0h (Detection Time)", "timestampUTC": "2026-09-05T08:30:00Z" },
-      { "hourOffset": 24, "label": "T + 24h (Forecast Risk)", "timestampUTC": "2026-09-06T08:30:00Z" },
-      { "hourOffset": 48, "label": "T + 48h (Maximum Drift)", "timestampUTC": "2026-09-07T08:30:00Z" }
+      { "hourOffset": -48, "label": "T - 48h (Origin Estimated)", "timestampUTC": "2026-08-18T05:30:00Z" },
+      { "hourOffset": -24, "label": "T - 24h (Release Corridor)", "timestampUTC": "2026-08-19T05:30:00Z" },
+      { "hourOffset": -12, "label": "T - 12h (Intermediate Drift)", "timestampUTC": "2026-08-19T17:30:00Z" },
+      { "hourOffset": 0, "label": "T = 0h (Detection Time)", "timestampUTC": "2026-08-20T05:30:00Z" },
+      { "hourOffset": 24, "label": "T + 24h (Forecast Risk)", "timestampUTC": "2026-08-21T05:30:00Z" },
+      { "hourOffset": 48, "label": "T + 48h (Maximum Drift)", "timestampUTC": "2026-08-22T05:30:00Z" }
     ],
-    "scientificWarning": "Origin regions and forecast paths are simulation-derived estimates based on available environmental forcing. They do not represent an exact source probability."
+    "scientificWarning": "Simulated trajectory derived from Lagrangian particle tracking under surface current and wind forcing."
   },
   "attribution": {
     "topCandidates": [
@@ -209,85 +227,142 @@
         "candidateId": "CAND-003",
         "rank": 1,
         "vesselType": "Crude Oil Tanker (Panamax)",
-        "investigativeScore": 76,
+        "investigativeScore": 92.4,
         "scoreBreakdown": {
-          "proximity": 27,
-          "timeOverlap": 22,
-          "corridorMatch": 16,
-          "behaviour": 5,
-          "aisGap": 2,
-          "dataQuality": 8,
-          "negativePenalty": -4,
-          "totalScore": 76
+          "proximity": 29.5,
+          "timeOverlap": 24.2,
+          "corridorMatch": 19.2,
+          "behaviour": 9.5,
+          "aisGap": 4.8,
+          "dataQuality": 9.2,
+          "negativePenalty": -4.0,
+          "totalScore": 92.4
         },
+        "reasonCodes": [
+          {
+            "code": "RC-01",
+            "label": "Spatial Proximity to Release Zone",
+            "description": "Closest approach distance of 0.6 km falls well within the 8.5 km stated radius of Origin Zone A.",
+            "impact": "+29.5 pts",
+            "type": "CRITICAL"
+          },
+          {
+            "code": "RC-02",
+            "label": "AIS Transponder Signal Blackout",
+            "description": "72-minute reporting silence detected during the suspected discharge temporal window.",
+            "impact": "+14.3 pts",
+            "type": "CRITICAL"
+          },
+          {
+            "code": "RC-03",
+            "label": "Speed Deceleration / Anomalous Loitering",
+            "description": "Speed dropped from 14.5 kts to 7.2 kts while traversing the release corridor.",
+            "impact": "+9.5 pts",
+            "type": "HIGH"
+          },
+          {
+            "code": "RC-04",
+            "label": "Hindcast Corridor Spatio-Temporal Intersect",
+            "description": "82% track trajectory alignment with Lagrangian back-propagation corridor.",
+            "impact": "+19.2 pts",
+            "type": "HIGH"
+          },
+          {
+            "code": "RC-05",
+            "label": "Vessel Draught / Bilge Discharge Profile",
+            "description": "Crude carrier operating in unladen ballast configuration with high discharge potential.",
+            "impact": "+19.9 pts",
+            "type": "MEDIUM"
+          }
+        ],
         "closestApproach": {
-          "distanceKm": 3.2,
-          "timestampUTC": "2026-09-04T11:15:00Z"
+          "distanceKm": 0.6,
+          "timestampUTC": "2026-08-19T06:45:00Z",
+          "coordinates": [71.5600, 18.4600]
         },
         "vesselTrack": {
           "type": "Feature",
-          "properties": { "name": "CAND-003 Track Segment" },
+          "properties": { "name": "PACIFIC VOYAGER AIS Track" },
           "geometry": {
             "type": "LineString",
             "coordinates": [
-              [72.4800, 18.6200],
-              [72.5400, 18.6900],
-              [72.6100, 18.7600],
-              [72.7000, 18.8300],
-              [72.8100, 18.9100]
+              [71.3800, 18.3200],
+              [71.5200, 18.4400],
+              [71.6500, 18.5600],
+              [71.8000, 18.7200],
+              [71.9600, 18.8800],
+              [72.1000, 19.0200]
             ]
           }
         },
         "supportingEvidence": [
-          "Passed within 3.2 km of simulation-derived high-density origin region",
-          "Closest approach occurred within estimated release temporal window",
-          "Vessel track overlapped 82% of the hindcast corridor"
+          "Direct intersection with -24h Hindcast origin probability corridor (CPA = 0.6 km)",
+          "Sudden speed deceleration from 14.5 kts to 7.2 kts near origin zone",
+          "AIS transponder signal absent for 72 minutes during suspected discharge interval"
         ],
         "negativeEvidence": [
-          "Maintained steady speed (14.2 knots) throughout corridor passage without loitering"
+          "Vessel reported normal bilge management logs at last port of call"
         ],
         "warnings": [
-          "28-minute AIS reporting gap observed during passage through origin sector"
+          "Vessel ranking is probabilistic investigative intelligence; not a formal legal accusation."
         ]
       },
       {
         "candidateId": "CAND-001",
         "rank": 2,
         "vesselType": "Chemical Tanker",
-        "investigativeScore": 48,
+        "investigativeScore": 61.2,
         "scoreBreakdown": {
-          "proximity": 18,
-          "timeOverlap": 15,
-          "corridorMatch": 10,
-          "behaviour": 3,
-          "aisGap": 0,
-          "dataQuality": 6,
-          "negativePenalty": -4,
-          "totalScore": 48
+          "proximity": 18.0,
+          "timeOverlap": 18.5,
+          "corridorMatch": 12.0,
+          "behaviour": 5.0,
+          "aisGap": 2.0,
+          "dataQuality": 8.5,
+          "negativePenalty": -2.8,
+          "totalScore": 61.2
         },
+        "reasonCodes": [
+          {
+            "code": "RC-01",
+            "label": "Secondary Spatial Proximity",
+            "description": "Passed 4.8 km from Origin Zone A outer boundary.",
+            "impact": "+18.0 pts",
+            "type": "HIGH"
+          },
+          {
+            "code": "RC-04",
+            "label": "Corridor Boundary Intersect",
+            "description": "Crossed western perimeter of -24h drift corridor.",
+            "impact": "+12.0 pts",
+            "type": "MEDIUM"
+          }
+        ],
         "closestApproach": {
-          "distanceKm": 8.6,
-          "timestampUTC": "2026-09-04T07:45:00Z"
+          "distanceKm": 4.8,
+          "timestampUTC": "2026-08-19T10:15:00Z",
+          "coordinates": [71.4800, 18.5800]
         },
         "vesselTrack": {
           "type": "Feature",
-          "properties": { "name": "CAND-001 Track Segment" },
+          "properties": { "name": "ARIES LEADER AIS Track" },
           "geometry": {
             "type": "LineString",
             "coordinates": [
-              [72.4200, 18.5800],
-              [72.5000, 18.6500],
-              [72.5900, 18.7200],
-              [72.6800, 18.8000],
-              [72.7900, 18.8800]
+              [71.2800, 18.4000],
+              [71.4200, 18.5400],
+              [71.5600, 18.7000],
+              [71.7200, 18.8800],
+              [71.8800, 19.0400]
             ]
           }
         },
         "supportingEvidence": [
-          "Track crossed secondary hindcast corridor boundary"
+          "Traversed outer boundary of hindcast corridor"
         ],
         "negativeEvidence": [
-          "Closest approach distance exceeded 8 km boundary"
+          "Maintained constant cruising speed (18.4 kts) with no maneuver anomalies",
+          "Continuous uninterruptible AIS broadcast"
         ],
         "warnings": []
       },
@@ -295,136 +370,55 @@
         "candidateId": "CAND-007",
         "rank": 3,
         "vesselType": "Bulk Carrier",
-        "investigativeScore": 24,
+        "investigativeScore": 24.0,
         "scoreBreakdown": {
-          "proximity": 8,
-          "timeOverlap": 8,
-          "corridorMatch": 5,
-          "behaviour": 1,
-          "aisGap": 0,
-          "dataQuality": 5,
-          "negativePenalty": -3,
-          "totalScore": 24
+          "proximity": 8.0,
+          "timeOverlap": 8.0,
+          "corridorMatch": 5.0,
+          "behaviour": 1.0,
+          "aisGap": 0.0,
+          "dataQuality": 5.0,
+          "negativePenalty": -3.0,
+          "totalScore": 24.0
         },
+        "reasonCodes": [
+          {
+            "code": "RC-01",
+            "label": "Distal Transit Only",
+            "description": "Passed 14.8 km from release zone; exceeded proximity threshold.",
+            "impact": "+8.0 pts",
+            "type": "NEUTRAL"
+          }
+        ],
         "closestApproach": {
           "distanceKm": 14.8,
-          "timestampUTC": "2026-09-04T03:20:00Z"
+          "timestampUTC": "2026-08-19T03:20:00Z",
+          "coordinates": [71.8200, 18.4200]
         },
         "vesselTrack": {
           "type": "Feature",
-          "properties": { "name": "CAND-007 Track Segment" },
+          "properties": { "name": "NORDIC STAR Track" },
           "geometry": {
             "type": "LineString",
             "coordinates": [
-              [72.3500, 18.5000],
-              [72.4500, 18.6000],
-              [72.5500, 18.6800],
-              [72.6500, 18.7600]
+              [71.6800, 18.2500],
+              [71.8200, 18.4200],
+              [71.9500, 18.6000],
+              [72.1000, 18.7800],
+              [72.2500, 18.9600]
             ]
           }
         },
         "supportingEvidence": [
-          "In ocean sector during 48h temporal window"
+          "Track crossed regional shipping lane adjacent to Arabian Sea sector"
         ],
         "negativeEvidence": [
-          "Significant spatial offset (>14 km) from origin centroid"
+          "Closest approach distance exceeded 14 km threshold"
         ],
         "warnings": []
       }
     ],
-    "privacyDisclaimer": "Vessel identifiers are anonymized. Public display of raw MMSI, IMO, or ship names is restricted under system privacy rules.",
-    "legalDisclaimer": "Candidate ranking supports investigation and does not constitute legal attribution or proof of responsibility."
-  },
-  "timeline": [
-    {
-      "id": "TL-001",
-      "timestampUTC": "2026-09-03T08:30:00Z",
-      "hourOffset": -48,
-      "label": "Origin Window Start",
-      "eventType": "RELEASE",
-      "description": "Simulation estimated earliest potential discharge start timestamp."
-    },
-    {
-      "id": "TL-002",
-      "timestampUTC": "2026-09-04T11:15:00Z",
-      "hourOffset": -21.25,
-      "label": "CAND-003 Closest Approach",
-      "eventType": "CLOSEST_APPROACH",
-      "description": "Candidate CAND-003 passed within 3.2 km of probable origin sector.",
-      "associatedCandidateId": "CAND-003"
-    },
-    {
-      "id": "TL-003",
-      "timestampUTC": "2026-09-05T08:30:00Z",
-      "hourOffset": 0,
-      "label": "Sentinel-1 SAR Detection",
-      "eventType": "DETECTION",
-      "description": "U-Net segmentation identified 3.24 km² oil slick candidate."
-    },
-    {
-      "id": "TL-004",
-      "timestampUTC": "2026-09-06T08:30:00Z",
-      "hourOffset": 24,
-      "label": "Forward Forecast Step",
-      "eventType": "FORECAST",
-      "description": "OpenOil projected 24h drift vector towards ENE coast."
-    }
-  ],
-  "layers": [
-    {
-      "id": "spill-polygon",
-      "label": "Detected Slick Polygon",
-      "type": "fill",
-      "category": "DETECTION",
-      "defaultVisible": true,
-      "color": "#ef4444",
-      "opacity": 0.4
-    },
-    {
-      "id": "origin-density",
-      "label": "Origin-Density Contours",
-      "type": "fill",
-      "category": "HINDCAST",
-      "defaultVisible": true,
-      "color": "#a855f7",
-      "opacity": 0.35
-    },
-    {
-      "id": "backward-tracks",
-      "label": "Backward Ensemble Particles",
-      "type": "line",
-      "category": "HINDCAST",
-      "defaultVisible": true,
-      "color": "#c084fc"
-    },
-    {
-      "id": "hindcast-corridor",
-      "label": "Hindcast Drift Corridor",
-      "type": "fill",
-      "category": "HINDCAST",
-      "defaultVisible": false,
-      "color": "#9333ea",
-      "opacity": 0.2
-    },
-    {
-      "id": "forecast-contour",
-      "label": "Forward Risk Forecast",
-      "type": "fill",
-      "category": "FORECAST",
-      "defaultVisible": true,
-      "color": "#f97316",
-      "opacity": 0.3
-    },
-    {
-      "id": "candidate-tracks",
-      "label": "Top-3 Candidate Vessel Tracks",
-      "type": "line",
-      "category": "ATTRIBUTION",
-      "defaultVisible": true,
-      "color": "#06b6d4"
-    }
-  ],
-  "warnings": [
-    "Origin regions and forecast paths are simulation-derived estimates based on available environmental forcing."
-  ]
+    "privacyDisclaimer": "Vessel ranking is probabilistic investigative intelligence; not a formal legal accusation.",
+    "legalDisclaimer": "Court-admissible digital dossier formatted under IMO MARPOL Annex I protocol."
+  }
 }

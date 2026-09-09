@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import AnalyzeSceneModal from "@/components/detection/AnalyzeSceneModal";
 import { ApiClient } from "@/lib/api-client";
 import { CompleteDashboardResponse, CaseSummary } from "@/lib/contracts";
 
@@ -10,6 +11,7 @@ export default function CaseOverviewPage() {
   const [data, setData] = useState<CompleteDashboardResponse | null>(null);
   const [casesList, setCasesList] = useState<CaseSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -38,6 +40,13 @@ export default function CaseOverviewPage() {
 
   return (
     <DashboardLayout caseSummary={caseSummary}>
+      <AnalyzeSceneModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAnalysisComplete={(newData) => setData(newData)}
+        currentCaseId={caseSummary.caseId}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 font-mono text-xs">
         {/* CASE SUMMARY & PIPELINE STATUS CARD (8 COLS) */}
         <div className="lg:col-span-8 space-y-6">
@@ -56,7 +65,14 @@ export default function CaseOverviewPage() {
                 </p>
               </div>
 
-              <div className="text-right space-y-1">
+              <div className="flex flex-col items-end space-y-2">
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-bold rounded shadow-[0_0_10px_rgba(6,182,212,0.4)] flex items-center space-x-1.5 transition cursor-pointer"
+                >
+                  <span>🛰️</span>
+                  <span>ANALYZE NEW SAR SCENE</span>
+                </button>
                 <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded font-bold text-xs">
                   STATUS: {caseSummary.overallStatus}
                 </span>

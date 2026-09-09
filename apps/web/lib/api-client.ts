@@ -3,7 +3,7 @@ import {
   CaseSummary,
   RunStatusResponse,
 } from "./contracts";
-import completeDashboardFixture from "../fixtures/complete-dashboard.fixture.json";
+import { CaseRepository } from "./case-repository";
 import casesListFixture from "../fixtures/cases-list.fixture.json";
 
 const API_BASE_URL =
@@ -14,12 +14,12 @@ const USE_FIXTURES =
 export class ApiClient {
   /**
    * Fetches full dashboard data for a given case.
-   * Seamlessly uses fixture fallback if backend is offline or USE_FIXTURES is true.
+   * Uses distinct case repository or connects to real API gateway.
    */
   static async getCaseDashboard(caseId: string): Promise<CompleteDashboardResponse> {
     if (USE_FIXTURES) {
-      console.log(`[VARUN-ASTRA API Client] Using local fixture fallback for case: ${caseId}`);
-      return completeDashboardFixture as CompleteDashboardResponse;
+      console.log(`[VARUN-ASTRA API Client] Serving dataset for case: ${caseId}`);
+      return CaseRepository.getCase(caseId);
     }
 
     try {
@@ -35,10 +35,10 @@ export class ApiClient {
       return await res.json();
     } catch (err) {
       console.warn(
-        `[VARUN-ASTRA API Client] Real API request failed. Falling back to local fixture. Error:`,
+        `[VARUN-ASTRA API Client] Real API request failed. Falling back to case repository for ${caseId}. Error:`,
         err
       );
-      return completeDashboardFixture as CompleteDashboardResponse;
+      return CaseRepository.getCase(caseId);
     }
   }
 

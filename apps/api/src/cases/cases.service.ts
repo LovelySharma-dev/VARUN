@@ -37,19 +37,30 @@ export class CasesService {
             createdAt: new Date('2026-09-05T08:30:00Z').toISOString(),
             updatedAt: new Date('2026-09-05T10:15:00Z').toISOString(),
             metadata: {
-              title: 'Arabian Sea Offshore Slick Incident',
-              region: 'Bombay High Sector 4 (18.9214° N, 72.8347° E)',
+              title: 'Arabian Sea Offshore Crude Slick',
+              region: 'Bombay High Offshore Field (19.4200° N, 71.3500° E)',
             },
           },
           {
             caseId: 'CASE-S2-DEMO-002',
-            status: 'PROCESSING',
+            status: 'OPEN',
             dataOrigin: 'CONTROLLED_SYNTHETIC',
             createdAt: new Date('2026-09-04T14:20:00Z').toISOString(),
             updatedAt: new Date('2026-09-05T09:40:00Z').toISOString(),
             metadata: {
-              title: 'Gujarat Gulf of Kutch Drift Analysis',
-              region: 'Gulf of Kutch Sector 2 (22.4500° N, 69.1200° E)',
+              title: 'Gulf of Kutch Channel Spillage',
+              region: 'Kandla Approach Channel (22.5100° N, 69.3200° E)',
+            },
+          },
+          {
+            caseId: 'CASE-S3-DEMO-003',
+            status: 'OPEN',
+            dataOrigin: 'CONTROLLED_SYNTHETIC',
+            createdAt: new Date('2026-09-03T06:15:00Z').toISOString(),
+            updatedAt: new Date('2026-09-04T18:00:00Z').toISOString(),
+            metadata: {
+              title: 'Bay of Bengal Bulk Carrier Discharge',
+              region: 'Paradip Offshore Sector (19.9500° N, 86.8500° E)',
             },
           },
         ],
@@ -99,8 +110,8 @@ export class CasesService {
         createdAt: new Date('2026-09-05T08:30:00Z').toISOString(),
         updatedAt: new Date('2026-09-05T10:15:00Z').toISOString(),
         metadata: {
-          title: 'Arabian Sea Offshore Slick Incident',
-          region: 'Bombay High Sector 4 (18.9214° N, 72.8347° E)',
+          title: caseId === 'CASE-S2-DEMO-002' ? 'Gulf of Kutch Channel Spillage' : caseId === 'CASE-S3-DEMO-003' ? 'Bay of Bengal Bulk Carrier Discharge' : 'Arabian Sea Offshore Crude Slick',
+          region: caseId === 'CASE-S2-DEMO-002' ? 'Kandla Approach Channel (22.5100° N, 69.3200° E)' : caseId === 'CASE-S3-DEMO-003' ? 'Paradip Offshore Sector (19.9500° N, 86.8500° E)' : 'Bombay High Offshore Field (19.4200° N, 71.3500° E)',
         },
         scenes: [
           {
