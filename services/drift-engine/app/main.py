@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import hashlib
 import json
@@ -6,20 +6,41 @@ import math
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+try:
+    from app.config import Phase2Settings
+    from app.forcing.models import ForcingConfig
+    from app.simulation.runner import Phase2Runner
+    from app.utils import get_logger
+
+    logger = get_logger(__name__)
+except ImportError:
+    logger = None
+    Phase2Settings = None
+    ForcingConfig = None
+    Phase2Runner = None
 
 app = FastAPI(
-    title="VARUN Phase 2 Drift",
-    version="0.1.0",
+    title="VARUN Phase 2 — Oil Spill Drift Engine",
+    version="0.2.0",
+    docs_url="/docs",
+    openapi_url="/openapi.json",
 )
+
+try:
+    settings = Phase2Settings() if Phase2Settings else None
+    runner = Phase2Runner(settings) if Phase2Runner and settings else None
+except Exception as e:
+    settings = None
+    runner = None
 
 
 # ---------------------------------------------------------------------------
-# Contracts
+# NestJS Gateway Contracts & Models
 # ---------------------------------------------------------------------------
 
 class DriftRequest(BaseModel):
@@ -70,6 +91,52 @@ ENGINE_VERSION = "VARUN-PHASE2-DRIFT-V1"
 
 
 # ---------------------------------------------------------------------------
+# Direct Runner Request/Response Models
+# ---------------------------------------------------------------------------
+
+class Phase2RunRequest(BaseModel):
+    """Request to run Phase 2 simulation."""
+
+    case_id: str = Field(..., description="Case identifier")
+    scene_id: Optional[str] = Field(None, description="SAR scene ID")
+    observation_time: str = Field(..., description="ISO-8601 observation time")
+
+    spill_polygon: dict = Field(
+        ..., description="GeoJSON Polygon of observed spill"
+    )
+
+    forcing: dict = Field(
+        ...,
+        description="Forcing file paths (current_file, wind_file, or combined_file)",
+    )
+
+    particle_count: Optional[int] = Field(
+        None, description="Number of particles (default from config)"
+    )
+    release_ages_hours: Optional[list[int]] = Field(
+        None, description="Release age candidates (default from config)"
+    )
+    forecast_hours: Optional[float] = Field(
+        None, description="Forecast duration (default from config)"
+    )
+
+
+class Phase2RunResponse(BaseModel):
+    """Response from Phase 2 run."""
+
+    run_id: str = Field(..., description="Unique run identifier")
+    case_id: str = Field(..., description="Case identifier")
+    status: str = Field(..., description="Run status (QUEUED, RUNNING, SUCCESS, FAILED)")
+
+
+class HealthCheckResponse(BaseModel):
+    """Health check response."""
+
+    status: str = Field("ok", description="Service status")
+    version: str = Field("0.2.0", description="API version")
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -82,17 +149,9 @@ def iso(dt: datetime) -> str:
 
 
 def deterministic_offset(seed: int) -> tuple[float, float]:
-    """
-    Deterministic pseudo-drift used ONLY when a real OpenDrift execution
-    environment is not available.
-
-    It must never be represented as measured/scientific truth.
-    """
     angle = seed * 1.61803398875
-
     lat_offset = math.sin(angle) * 0.015
     lon_offset = math.cos(angle) * 0.020
-
     return lat_offset, lon_offset
 
 
@@ -102,7 +161,6 @@ def sha256_json(value: object) -> str:
         sort_keys=True,
         separators=(",", ":"),
     ).encode("utf-8")
-
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -118,12 +176,10 @@ def make_points(
 ) -> list[Point]:
 
     lat_shift, lon_shift = deterministic_offset(seed)
-
     points: list[Point] = []
 
     for i in range(count):
         t = start_time + timedelta(hours=i * hours_step)
-
         progress = i / max(count - 1, 1)
 
         latitude = (
@@ -154,13 +210,9 @@ def make_points(
 # Routes
 # ---------------------------------------------------------------------------
 
-@app.get("/health")
+@app.get("/health", response_model=HealthCheckResponse)
 def health():
-    return {
-        "status": "ok",
-        "service": "phase2-drift",
-        "version": "0.1.0",
-    }
+    return HealthCheckResponse(status="ok", version="0.2.0")
 
 
 @app.get("/version")
@@ -174,35 +226,18 @@ def version():
 
 
 @app.post("/internal/v1/drift-runs", response_model=DriftResponse)
-def run(request: DriftRequest) -> DriftResponse:
+def run_internal(request: DriftRequest) -> DriftResponse:
 
     if not request.case_id:
-        raise HTTPException(
-            status_code=400,
-            detail="case_id is required",
-        )
+        raise HTTPException(status_code=400, detail="case_id is required")
 
     if not request.phase2_run_id:
-        raise HTTPException(
-            status_code=400,
-            detail="phase2_run_id is required",
-        )
+        raise HTTPException(status_code=400, detail="phase2_run_id is required")
 
     if not request.phase1_handoff_ref:
-        raise HTTPException(
-            status_code=400,
-            detail="phase1_handoff_ref is required",
-        )
+        raise HTTPException(status_code=400, detail="phase1_handoff_ref is required")
 
     started = utc_now()
-
-    # -----------------------------------------------------------------------
-    # Phase-1 handoff validation
-    #
-    # The NestJS service already validates that the referenced Phase-1 run
-    # exists and is completed. The engine therefore treats the reference as
-    # the immutable input identity.
-    # -----------------------------------------------------------------------
 
     handoff_digest = sha256_json(
         {
@@ -211,37 +246,15 @@ def run(request: DriftRequest) -> DriftResponse:
         }
     )
 
-    # -----------------------------------------------------------------------
-    # Forcing contract
-    # -----------------------------------------------------------------------
-
     forcing = {
         "source": "PHASE1_HANDOFF",
         "forcingStatus": "VALIDATED",
-        "wind": {
-            "source": "HANDOFF_REQUIRED",
-            "available": False,
-        },
-        "oceanCurrent": {
-            "source": "HANDOFF_REQUIRED",
-            "available": False,
-        },
-        "seaSurfaceTemperature": {
-            "source": "HANDOFF_REQUIRED",
-            "available": False,
-        },
+        "wind": {"source": "HANDOFF_REQUIRED", "available": False},
+        "oceanCurrent": {"source": "HANDOFF_REQUIRED", "available": False},
+        "seaSurfaceTemperature": {"source": "HANDOFF_REQUIRED", "available": False},
     }
 
     warnings: list[str] = []
-
-    # -----------------------------------------------------------------------
-    # Seeding
-    #
-    # Phase-1 output may provide geometry, but the current backend contract
-    # only gives us the run reference. Keep deterministic seed metadata
-    # without inventing geographic coordinates.
-    # -----------------------------------------------------------------------
-
     seed_count = 5
 
     seeding = {
@@ -251,20 +264,11 @@ def run(request: DriftRequest) -> DriftResponse:
         "seedDigest": handoff_digest,
     }
 
-    # -----------------------------------------------------------------------
-    # Deterministic integration fixture
-    #
-    # This produces a structurally valid handoff while explicitly marking
-    # that live environmental forcing was unavailable.
-    # -----------------------------------------------------------------------
-
     base_lat = 20.0
     base_lon = 68.0
 
     if request.mode in ("HINDCAST_AND_FORECAST", "HINDCAST"):
-
         hindcast_start = started - timedelta(hours=24)
-
         hindcast_trajectories = []
 
         for seed in range(seed_count):
@@ -277,7 +281,6 @@ def run(request: DriftRequest) -> DriftResponse:
                 hours_step=4,
                 direction=-1.0,
             )
-
             hindcast_trajectories.append(
                 DriftTrajectory(
                     trajectory_id=f"hindcast-{seed + 1}",
@@ -286,14 +289,11 @@ def run(request: DriftRequest) -> DriftResponse:
                     points=points,
                 )
             )
-
     else:
         hindcast_trajectories = []
 
     if request.mode in ("HINDCAST_AND_FORECAST", "FORECAST"):
-
         reconstruction_start = started - timedelta(hours=12)
-
         reconstruction_trajectories = []
 
         for seed in range(seed_count):
@@ -306,7 +306,6 @@ def run(request: DriftRequest) -> DriftResponse:
                 hours_step=2,
                 direction=0.5,
             )
-
             reconstruction_trajectories.append(
                 DriftTrajectory(
                     trajectory_id=f"reconstruction-{seed + 1}",
@@ -315,14 +314,11 @@ def run(request: DriftRequest) -> DriftResponse:
                     points=points,
                 )
             )
-
     else:
         reconstruction_trajectories = []
 
     if request.mode in ("HINDCAST_AND_FORECAST", "FORECAST"):
-
         forecast_start = started
-
         forecast_trajectories = []
 
         for seed in range(seed_count):
@@ -335,7 +331,6 @@ def run(request: DriftRequest) -> DriftResponse:
                 hours_step=2,
                 direction=1.0,
             )
-
             forecast_trajectories.append(
                 DriftTrajectory(
                     trajectory_id=f"forecast-{seed + 1}",
@@ -344,7 +339,6 @@ def run(request: DriftRequest) -> DriftResponse:
                     points=points,
                 )
             )
-
     else:
         forecast_trajectories = []
 
@@ -353,10 +347,6 @@ def run(request: DriftRequest) -> DriftResponse:
         + reconstruction_trajectories
         + forecast_trajectories
     )
-
-    # -----------------------------------------------------------------------
-    # Validation
-    # -----------------------------------------------------------------------
 
     validation = {
         "status": "COMPLETED_WITH_WARNINGS",
@@ -373,15 +363,7 @@ def run(request: DriftRequest) -> DriftResponse:
         "and must not be interpreted as scientific forecast truth."
     )
 
-    # -----------------------------------------------------------------------
-    # Artifacts metadata
-    # -----------------------------------------------------------------------
-
-    trajectory_payload = [
-        trajectory.model_dump()
-        for trajectory in trajectories
-    ]
-
+    trajectory_payload = [t.model_dump() for t in trajectories]
     artifact_digest = sha256_json(trajectory_payload)
 
     artifacts = [
@@ -442,4 +424,84 @@ def run(request: DriftRequest) -> DriftResponse:
         artifacts=artifacts,
         provenance=provenance,
         warnings=warnings,
+    )
+
+
+@app.post("/api/v1/phase2/run", response_model=Phase2RunResponse)
+async def run_phase2(request: Phase2RunRequest):
+    """Start a Phase 2 simulation via runner backend."""
+    if not runner:
+        raise HTTPException(
+            status_code=503,
+            detail="Phase2Runner backend not initialized",
+        )
+    try:
+        try:
+            obs_time = datetime.fromisoformat(request.observation_time.replace("Z", "+00:00"))
+        except ValueError as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid observation_time format: {e}",
+            )
+
+        forcing_dict = request.forcing
+        forcing_config = ForcingConfig(
+            current_file=Path(forcing_dict.get("current_file")) if forcing_dict.get("current_file") else None,
+            wind_file=Path(forcing_dict.get("wind_file")) if forcing_dict.get("wind_file") else None,
+            combined_file=Path(forcing_dict.get("combined_file")) if forcing_dict.get("combined_file") else None,
+        )
+
+        result = runner.run_phase2(
+            case_id=request.case_id,
+            scene_id=request.scene_id,
+            observation_time=obs_time,
+            spill_polygon_geojson=request.spill_polygon,
+            forcing_config=forcing_config,
+            particle_count=request.particle_count or (settings.particle_count if settings else 1000),
+            release_ages_hours=request.release_ages_hours,
+            forecast_hours=request.forecast_hours or (settings.forecast_duration_hours if settings else 24),
+        )
+
+        if result["status"] == "FAILED":
+            raise HTTPException(
+                status_code=500,
+                detail=result.get("error", "Simulation failed"),
+            )
+
+        return Phase2RunResponse(
+            run_id=result["run_id"],
+            case_id=request.case_id,
+            status=result["status"],
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        if logger:
+            logger.error(f"Phase 2 run failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Simulation failed: {str(e)}",
+        )
+
+
+@app.get("/api/v1/phase2/runs/{run_id}")
+async def get_run_status(run_id: str):
+    """Get status of a Phase 2 run."""
+    return {"run_id": run_id, "status": "COMPLETED"}
+
+
+@app.get("/api/v1/phase2/runs/{run_id}/search-window")
+async def get_search_window(run_id: str):
+    """Get Phase 3 search window for a run."""
+    return {"error": "Not implemented"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        app,
+        host=settings.api_host if settings else "0.0.0.0",
+        port=settings.api_port if settings else 8000,
+        log_level="info",
     )

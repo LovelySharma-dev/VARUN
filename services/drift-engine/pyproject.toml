@@ -1,14 +1,135 @@
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "varun-drift-engine"
-version = "0.1.0"
-requires-python = ">=3.11,<3.15"
-dependencies = [
-    "fastapi>=0.110.0",
-    "uvicorn[standard]>=0.28.0",
-    "pydantic>=2.6.0",
+version = "0.2.0"
+description = "VARUN Phase 2 — Oil Spill Drift Simulation Engine"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "VARUN Engineering", email = "varun@example.com" }
 ]
+
+dependencies = [
+    # Core scientific
+    "numpy>=1.26.0",
+    "scipy>=1.14.0",
+    "xarray>=2024.02.0",
+    "netCDF4>=1.6.5",
+    
+    # Oil drift simulation
+    "opendrift==1.14.11",
+    "opendrift[extra]>=1.14.11",
+    
+    # Geometry and spatial
+    "shapely>=2.0.0",
+    "geopandas>=0.14.0",
+    "pyproj>=3.6.0",
+    
+    # Data handling
+    "pandas>=2.2.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    
+    # API
+    "fastapi>=0.108.0",
+    "uvicorn[standard]>=0.27.0",
+    "httpx>=0.25.0",
+    
+    # Utilities
+    "python-dotenv>=1.0.0",
+    "click>=8.1.0",
+    "pytz>=2024.1",
+]
+
+[project.optional-dependencies]
+testing = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-timeout>=2.2.0",
+]
+dev = [
+    "ruff>=0.2.0",
+    "black>=24.1.0",
+    "isort>=5.13.0",
+    "mypy>=1.8.0",
+    "ipython>=8.20.0",
+]
+
+[project.scripts]
+phase2-audit = "app.forcing.audit:cli_main"
+phase2-run = "app.simulation.runner:cli_main"
+phase2-validate = "app.scripts.validate_phase2_run:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "requires_forcing: marks tests that require forcing data",
+]
 
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "*.egg-info",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # Pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "RUF",   # Ruff-specific rules
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.black]
+line-length = 100
+target-version = ["py313"]
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "opendrift.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "netCDF4.*"
+ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
