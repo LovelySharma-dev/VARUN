@@ -1,0 +1,5 @@
+{
+    "reconstruction_error_threshold": 0.6059436070849035,
+    "selection_dataset": "validation_normal_subset",
+    "selection_method": "95th_percentile_normal_error"
+}

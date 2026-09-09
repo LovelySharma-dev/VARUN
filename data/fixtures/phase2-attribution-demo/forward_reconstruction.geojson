@@ -1,0 +1,29 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            72.42,
+            18.65
+          ],
+          [
+            72.49,
+            18.71
+          ],
+          [
+            72.56,
+            18.77
+          ]
+        ]
+      },
+      "properties": {
+        "simulation": "forward_reconstruction",
+        "scenario_type": "controlled_synthetic_demo"
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+    "train_vessels_count": 7459,
+    "validation_vessels_count": 1599,
+    "test_vessels_count": 1599,
+    "leakage_assertion": "Passed: train, validation, and test vessel IDs are completely disjoint."
+}

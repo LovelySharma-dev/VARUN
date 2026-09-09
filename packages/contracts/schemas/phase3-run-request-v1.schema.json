@@ -1,0 +1,50 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "phase2Folder": {
+      "minLength": 1,
+      "title": "Phase2Folder",
+      "type": "string"
+    },
+    "aisCsvPath": {
+      "minLength": 1,
+      "title": "Aiscsvpath",
+      "type": "string"
+    },
+    "outputDirectory": {
+      "minLength": 1,
+      "title": "Outputdirectory",
+      "type": "string"
+    },
+    "windowStride": {
+      "default": 2,
+      "maximum": 10,
+      "minimum": 1,
+      "title": "Windowstride",
+      "type": "integer"
+    },
+    "batchSize": {
+      "default": 1024,
+      "maximum": 4096,
+      "minimum": 1,
+      "title": "Batchsize",
+      "type": "integer"
+    },
+    "topCandidates": {
+      "default": 3,
+      "maximum": 100,
+      "minimum": 1,
+      "title": "Topcandidates",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "phase2Folder",
+    "aisCsvPath",
+    "outputDirectory"
+  ],
+  "title": "Phase3RunPublicRequest",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "phase3-run-request-v1.schema.json"
+}

@@ -1,0 +1,8 @@
+{
+  "phase2Folder": "data/fixtures/phase2-attribution-demo",
+  "aisCsvPath": "data/fixtures/ais-demo/ais_input.csv",
+  "outputDirectory": "artifacts/cases/CASE_DEMO_001/phase3/NO_CANDIDATE_RUN",
+  "windowStride": 2,
+  "batchSize": 256,
+  "topCandidates": 3
+}

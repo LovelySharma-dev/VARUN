@@ -2,7 +2,15 @@
 name = "varun-detection-engine"
 version = "0.1.0"
 requires-python = ">=3.11,<3.13"
-dependencies = []
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.34,<1",
+    "pydantic>=2.10,<3",
+    "varun-phase1-core"
+]
+
+[tool.uv.sources]
+varun-phase1-core = { path = "../../packages/python/phase1-core", editable = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,0 +1,26 @@
+{
+  "selection_version": "ais-model-selection-v2.1",
+  "model_version": "ais-lstm-ae-v2.1",
+  "selection_dataset": "frozen presumed-normal validation vessel windows",
+  "selection_metric": "full-validation Huber loss",
+  "original_model": {
+    "path": "model_unthresholded_v21.keras",
+    "validation_huber": 0.010520799085497856,
+    "validation_mse": 0.05502019077539444
+  },
+  "fine_tuned_checkpoint": {
+    "path": "model_finetune_best_v21.keras",
+    "best_epoch": 82,
+    "validation_huber": 0.009389766491949558,
+    "validation_mse": 0.05174531415104866,
+    "sha256": "8d74ab24004d32a6d79fc70a76bf11cd3dc61af2b2381d5490a14d9688917004"
+  },
+  "selected_source": "fine_tuned_epoch_82",
+  "selected_model_path": "model_selected_unthresholded_v21.keras",
+  "selected_validation_huber": 0.009389766491949558,
+  "selected_validation_mse": 0.05174531415104866,
+  "validation_huber_improvement_percent": 10.750443805236646,
+  "selected_model_sha256": "1996072bab24d9325131ca54eb8f13e1f82641f938de5fbdc60eff2aab46d075",
+  "threshold_status": "NOT_CALIBRATED",
+  "test_data_used": false
+}

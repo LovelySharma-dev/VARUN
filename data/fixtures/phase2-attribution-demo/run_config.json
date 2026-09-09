@@ -1,0 +1,6 @@
+{
+  "run_id": "DRIFT_RUN_001",
+  "random_seed": 42,
+  "crs": "EPSG:4326",
+  "scenario_type": "controlled_synthetic_demo"
+}
