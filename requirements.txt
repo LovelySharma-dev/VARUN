@@ -1,0 +1,4 @@
+# VARUN-ASTRA Root Python Requirements
+# Refer to ./requirements/ folder for service-specific dependency files.
+
+-r requirements/requirements-all.txt

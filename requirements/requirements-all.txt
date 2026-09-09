@@ -1,0 +1,6 @@
+# VARUN-ASTRA Complete Monorepo All-In-One Python Environment
+-r requirements-common.txt
+-r requirements-phase1.txt
+-r requirements-phase2.txt
+-r requirements-phase3.txt
+-r requirements-dev.txt

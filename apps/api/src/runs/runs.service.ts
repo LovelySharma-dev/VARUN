@@ -274,7 +274,7 @@ if (
 // PHASE-1 DETECTION ENGINE
 // ---------------------------------
 
-const engineResult =
+const _engineResult =
   await this.phase1Engine.infer({
     imagePath: input.imagePath,
     imageWidth: input.imageWidth,
@@ -339,7 +339,7 @@ const engineResult =
       this.logger.log(
         'pg-boss queue initialized successfully.',
       );
-    } catch (error) {
+    } catch (_error) {
       this.logger.warn(
         'PostgreSQL/pg-boss is unavailable. Queue is disabled for this session.',
       );

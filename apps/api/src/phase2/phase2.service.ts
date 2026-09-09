@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   Injectable,
   Logger,
@@ -80,7 +80,7 @@ export class Phase2Service {
       this.logger.log(
         'Phase-2 pg-boss queue initialized.',
       );
-    } catch (error) {
+    } catch (_error) {
       this.logger.warn(
         'Phase-2 queue unavailable; Phase-2 creation disabled for this session.',
       );

@@ -1,0 +1,5 @@
+# Phase 2: Hydrodynamic Drift & OpenOil Trajectory Forecasting
+-r requirements-common.txt
+scipy>=1.11.0
+shapely>=2.0.0
+geojson>=3.1.0

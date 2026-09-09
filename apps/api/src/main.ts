@@ -10,8 +10,13 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api/v1');
-  app.enableCors({ origin: ['http://localhost:3000'] });
+  app.enableCors({
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    credentials: true,
+  });
 
-  await app.listen(Number(process.env.API_PORT ?? 4000));
+  const port = Number(process.env.API_PORT ?? process.env.PORT ?? 3001);
+  await app.listen(port);
+  console.log(`[VARUN API Gateway] Listening on port ${port}`);
 }
 bootstrap();

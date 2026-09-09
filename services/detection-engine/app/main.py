@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+_package_src = Path(__file__).resolve().parents[3] / "packages" / "python" / "phase1-core" / "src"
+if _package_src.exists() and str(_package_src) not in sys.path:
+    sys.path.insert(0, str(_package_src))
 
 from fastapi import FastAPI
 

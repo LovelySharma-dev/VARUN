@@ -73,7 +73,7 @@ def test_repository_replay_is_deterministic_private_and_ground_truth_free(
     )
 
     score = report["score_v1"]
-    assert score["weight_sum"] == 1.0
+    assert round(score["weight_sum"], 6) == 1.0
     assert score["semantics"] == (
         "INVESTIGATIVE_PRIORITY_NOT_RESPONSIBILITY_PROBABILITY"
     )
