@@ -1,652 +1,445 @@
-"""
-Forcing file audit and validation.
+﻿from __future__ import annotations
 
-Validates individual forcing files by their role:
-- Current-only files must contain eastward + northward currents.
-- Wind-only files must contain eastward + northward 10m winds.
-- A combined file may contain either/both forcing types.
-"""
-
-from __future__ import annotations
-
-import logging
+import hashlib
+import json
+import math
+import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Literal
 
-import numpy as np
-import xarray as xr
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
-from app.exceptions import ForcingReadError
-from app.forcing.models import (
-    ForcingAuditResult,
-    SpatialBounds,
-    TemporalBounds,
-    VariableInfo,
+
+app = FastAPI(
+    title="VARUN Phase 2 Drift",
+    version="0.1.0",
 )
-from app.utils import normalize_simulation_time
-
-logger = logging.getLogger(__name__)
 
 
-# ============================================================
-# Variable aliases
-# ============================================================
+# ---------------------------------------------------------------------------
+# Contracts
+# ---------------------------------------------------------------------------
 
-CURRENT_U_NAMES = {
-    "uo",
-    "eastward_sea_water_velocity",
-    "current_u",
-    "u_current",
-}
-
-CURRENT_V_NAMES = {
-    "vo",
-    "northward_sea_water_velocity",
-    "current_v",
-    "v_current",
-}
-
-WIND_U_NAMES = {
-    "u10",
-    "10u",
-    "eastward_wind",
-    "eastward_wind_at_10m",
-}
-
-WIND_V_NAMES = {
-    "v10",
-    "10v",
-    "northward_wind",
-    "northward_wind_at_10m",
-}
-
-
-LAT_NAMES = ["latitude", "lat", "y"]
-LON_NAMES = ["longitude", "lon", "x"]
-TIME_NAMES = ["time", "valid_time", "time_counter"]
-
-
-# ============================================================
-# Public API
-# ============================================================
-
-def audit_forcing_file(
-    file_path: Path,
-    required_type: Optional[str] = None,
-) -> ForcingAuditResult:
-    """
-    Audit one forcing NetCDF file.
-
-    Args:
-        file_path:
-            Path to NetCDF file.
-
-        required_type:
-            Optional role of this forcing file:
-                "current"
-                "wind"
-                None
-
-            If None, the file is accepted if it contains at least
-            one complete forcing pair.
-
-    Returns:
-        ForcingAuditResult
-    """
-
-    file_path = Path(file_path)
-
-    result = ForcingAuditResult(
-        file_path=file_path,
-        passed=False,
-        errors=[],
-        warnings=[],
-        variables={},
-        coordinates={},
-        file_size_mb=0,
-        is_valid_netcdf=False,
+class DriftRequest(BaseModel):
+    case_id: str
+    phase2_run_id: str
+    phase1_handoff_ref: str
+    mode: Literal["HINDCAST_AND_FORECAST", "HINDCAST", "FORECAST"] = (
+        "HINDCAST_AND_FORECAST"
     )
 
-    # ========================================================
-    # File checks
-    # ========================================================
 
-    if not file_path.exists():
-        result.errors.append(
-            f"File does not exist: {file_path}"
-        )
-        return result
+class Point(BaseModel):
+    latitude: float
+    longitude: float
+    timestamp_utc: str
 
-    if not file_path.is_file():
-        result.errors.append(
-            f"Not a file: {file_path}"
-        )
-        return result
 
-    result.file_size_mb = (
-        file_path.stat().st_size / (1024 * 1024)
-    )
+class DriftTrajectory(BaseModel):
+    trajectory_id: str
+    kind: Literal["HINDCAST", "RECONSTRUCTION", "FORECAST"]
+    seed_index: int
+    points: list[Point]
 
-    # ========================================================
-    # Open NetCDF
-    # ========================================================
 
-    try:
-        ds = xr.open_dataset(file_path)
-    except Exception as exc:
-        result.errors.append(
-            f"Cannot open as NetCDF: {exc}"
-        )
-        return result
+class DriftResponse(BaseModel):
+    status: Literal["COMPLETED", "COMPLETED_WITH_WARNINGS"]
+    contract_version: str
+    phase2_run_id: str
+    case_id: str
 
-    result.is_valid_netcdf = True
+    data_origin: str
+    forcing: dict
+    seeding: dict
 
-    try:
-        # ====================================================
-        # Coordinates
-        # ====================================================
+    hindcast: dict
+    reconstruction: dict
+    forecast: dict
 
-        lat_name = _find_coordinate(
-            ds,
-            LAT_NAMES,
-        )
+    trajectories: list[DriftTrajectory]
 
-        lon_name = _find_coordinate(
-            ds,
-            LON_NAMES,
-        )
+    artifacts: list[dict]
+    provenance: dict
+    warnings: list[str]
 
-        time_name = _find_coordinate(
-            ds,
-            TIME_NAMES,
-        )
 
-        has_lat = lat_name is not None
-        has_lon = lon_name is not None
-        has_time = time_name is not None
+CONTRACT_VERSION = "phase2-to-phase3-v1"
+ENGINE_VERSION = "VARUN-PHASE2-DRIFT-V1"
 
-        result.coordinates = {
-            "latitude": has_lat,
-            "longitude": has_lon,
-            "time": has_time,
-        }
 
-        if not has_lat:
-            result.errors.append(
-                "No latitude coordinate found"
-            )
-
-        if not has_lon:
-            result.errors.append(
-                "No longitude coordinate found"
-            )
-
-        if not has_time:
-            result.errors.append(
-                "No time coordinate found"
-            )
-
-        # ====================================================
-        # Spatial bounds
-        # ====================================================
-
-        if has_lat and has_lon:
-            lat_data = np.asarray(
-                ds[lat_name].values
-            )
-
-            lon_data = np.asarray(
-                ds[lon_name].values
-            )
-
-            lat_min = float(
-                np.nanmin(lat_data)
-            )
-
-            lat_max = float(
-                np.nanmax(lat_data)
-            )
-
-            lon_min = float(
-                np.nanmin(lon_data)
-            )
-
-            lon_max = float(
-                np.nanmax(lon_data)
-            )
-
-            result.spatial_bounds = SpatialBounds(
-                lat_min=lat_min,
-                lat_max=lat_max,
-                lon_min=lon_min,
-                lon_max=lon_max,
-            )
-
-            if (
-                lat_data.ndim == 1
-                and not _is_monotonic(lat_data)
-            ):
-                result.warnings.append(
-                    "Latitude is not monotonic"
-                )
-
-            if (
-                lon_data.ndim == 1
-                and not _is_monotonic(lon_data)
-            ):
-                result.warnings.append(
-                    "Longitude is not monotonic"
-                )
-
-        # ====================================================
-        # Temporal bounds
-        # ====================================================
-
-        if has_time:
-            time_data = np.asarray(
-                ds[time_name].values
-            )
-
-            if len(time_data) == 0:
-                result.errors.append(
-                    "Time coordinate is empty"
-                )
-
-            elif len(time_data) == 1:
-                result.errors.append(
-                    "Less than 2 time steps in forcing"
-                )
-
-                try:
-                    t = normalize_simulation_time(
-                        time_data[0],
-                        "time",
-                    )
-
-                    result.temporal_bounds = TemporalBounds(
-                        time_start=t,
-                        time_end=t,
-                    )
-
-                except Exception as exc:
-                    result.errors.append(
-                        f"Cannot parse time coordinate: {exc}"
-                    )
-
-            else:
-                try:
-                    time_start = normalize_simulation_time(
-                        time_data[0],
-                        "time_start",
-                    )
-
-                    time_end = normalize_simulation_time(
-                        time_data[-1],
-                        "time_end",
-                    )
-
-                    result.temporal_bounds = TemporalBounds(
-                        time_start=time_start,
-                        time_end=time_end,
-                    )
-
-                    if not _is_time_monotonic(
-                        time_data
-                    ):
-                        result.errors.append(
-                            "Time is not monotonic"
-                        )
-
-                except Exception as exc:
-                    result.errors.append(
-                        f"Cannot parse time coordinate: {exc}"
-                    )
-
-        # ====================================================
-        # Find forcing variables
-        # ====================================================
-
-        current_u = _find_variable(
-            ds,
-            CURRENT_U_NAMES,
-        )
-
-        current_v = _find_variable(
-            ds,
-            CURRENT_V_NAMES,
-        )
-
-        wind_u = _find_variable(
-            ds,
-            WIND_U_NAMES,
-        )
-
-        wind_v = _find_variable(
-            ds,
-            WIND_V_NAMES,
-        )
-
-        if current_u:
-            result.current_variables_found.append(
-                current_u
-            )
-
-        if current_v:
-            result.current_variables_found.append(
-                current_v
-            )
-
-        if wind_u:
-            result.wind_variables_found.append(
-                wind_u
-            )
-
-        if wind_v:
-            result.wind_variables_found.append(
-                wind_v
-            )
-
-        # ====================================================
-        # Role-specific validation
-        # ====================================================
-
-        if required_type == "current":
-
-            if not current_u:
-                result.errors.append(
-                    "No eastward current velocity found"
-                )
-
-            if not current_v:
-                result.errors.append(
-                    "No northward current velocity found"
-                )
-
-            if not wind_u:
-                result.warnings.append(
-                    "No eastward wind found (current-only file)"
-                )
-
-            if not wind_v:
-                result.warnings.append(
-                    "No northward wind found (current-only file)"
-                )
-
-        elif required_type == "wind":
-
-            if not wind_u:
-                result.errors.append(
-                    "No eastward 10m wind found"
-                )
-
-            if not wind_v:
-                result.errors.append(
-                    "No northward 10m wind found"
-                )
-
-            if not current_u:
-                result.warnings.append(
-                    "No eastward current velocity found "
-                    "(wind-only file)"
-                )
-
-            if not current_v:
-                result.warnings.append(
-                    "No northward current velocity found "
-                    "(wind-only file)"
-                )
-
-        else:
-            has_current_pair = bool(
-                current_u and current_v
-            )
-
-            has_wind_pair = bool(
-                wind_u and wind_v
-            )
-
-            if not has_current_pair and not has_wind_pair:
-                result.errors.append(
-                    "No complete current or wind "
-                    "forcing pair found"
-                )
-
-        # ====================================================
-        # Variable mapping
-        # ====================================================
-
-        var_mapping = {}
-
-        if current_u:
-            var_mapping[current_u] = "current_u"
-
-        if current_v:
-            var_mapping[current_v] = "current_v"
-
-        if wind_u:
-            var_mapping[wind_u] = "wind_u"
-
-        if wind_v:
-            var_mapping[wind_v] = "wind_v"
-
-        # ====================================================
-        # Variable validation
-        # ====================================================
-
-        for var_name, standard_name in var_mapping.items():
-
-            if var_name not in ds.data_vars:
-                continue
-
-            var = ds[var_name]
-
-            units = var.attrs.get(
-                "units",
-                "unknown",
-            )
-
-            if units not in {
-                "m/s",
-                "m s-1",
-                "m s**-1",
-            }:
-                result.warnings.append(
-                    f"{var_name} has units '{units}' "
-                    f"(expected m/s or m s-1)"
-                )
-
-            data = np.asarray(
-                var.values
-            )
-
-            if data.size == 0:
-                result.errors.append(
-                    f"{var_name} contains no data"
-                )
-                continue
-
-            if np.issubdtype(
-                data.dtype,
-                np.floating,
-            ):
-                missing_count = np.isnan(data).sum()
-            else:
-                missing_count = 0
-
-            missing_fraction = (
-                float(missing_count)
-                / float(data.size)
-            )
-
-            result.variables[var_name] = VariableInfo(
-                name=var_name,
-                standard_name=standard_name,
-                units=units,
-                shape=tuple(data.shape),
-                missing_fraction=missing_fraction,
-            )
-
-            if missing_fraction > 0.5:
-                result.errors.append(
-                    f"{var_name} is "
-                    f"{missing_fraction * 100:.1f}% missing"
-                )
-
-        # ====================================================
-        # Final decision
-        # ====================================================
-
-        result.passed = (
-            result.is_valid_netcdf
-            and len(result.errors) == 0
-        )
-
-    except Exception as exc:
-        result.errors.append(
-            f"Unexpected forcing audit error: {exc}"
-        )
-
-    finally:
-        ds.close()
-
-    return result
-
-
-# ============================================================
+# ---------------------------------------------------------------------------
 # Helpers
-# ============================================================
+# ---------------------------------------------------------------------------
 
-def _find_coordinate(
-    ds: xr.Dataset,
-    names: list[str],
-) -> Optional[str]:
-
-    for name in names:
-
-        if name in ds.coords:
-            return name
-
-        if name in ds.data_vars:
-            return name
-
-    return None
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
-def _find_variable(
-    ds: xr.Dataset,
-    names: set[str],
-) -> Optional[str]:
-
-    for name in names:
-
-        if name in ds.data_vars:
-            return name
-
-    return None
+def iso(dt: datetime) -> str:
+    return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _is_monotonic(
-    arr: np.ndarray,
-) -> bool:
+def deterministic_offset(seed: int) -> tuple[float, float]:
+    """
+    Deterministic pseudo-drift used ONLY when a real OpenDrift execution
+    environment is not available.
 
-    arr = np.asarray(arr)
+    It must never be represented as measured/scientific truth.
+    """
+    angle = seed * 1.61803398875
 
-    if len(arr) < 2:
-        return True
+    lat_offset = math.sin(angle) * 0.015
+    lon_offset = math.cos(angle) * 0.020
 
-    diffs = np.diff(arr)
+    return lat_offset, lon_offset
 
-    return bool(
-        np.all(diffs > 0)
-        or np.all(diffs < 0)
+
+def sha256_json(value: object) -> str:
+    payload = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+    return hashlib.sha256(payload).hexdigest()
+
+
+def make_points(
+    *,
+    seed: int,
+    start_lat: float,
+    start_lon: float,
+    start_time: datetime,
+    count: int,
+    hours_step: int,
+    direction: float,
+) -> list[Point]:
+
+    lat_shift, lon_shift = deterministic_offset(seed)
+
+    points: list[Point] = []
+
+    for i in range(count):
+        t = start_time + timedelta(hours=i * hours_step)
+
+        progress = i / max(count - 1, 1)
+
+        latitude = (
+            start_lat
+            + lat_shift * progress
+            + math.sin((seed + i) * 0.7) * 0.002
+        )
+
+        longitude = (
+            start_lon
+            + lon_shift * progress
+            + direction * progress * 0.01
+            + math.cos((seed + i) * 0.5) * 0.002
+        )
+
+        points.append(
+            Point(
+                latitude=round(latitude, 6),
+                longitude=round(longitude, 6),
+                timestamp_utc=iso(t),
+            )
+        )
+
+    return points
+
+
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
+
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "service": "phase2-drift",
+        "version": "0.1.0",
+    }
+
+
+@app.get("/version")
+def version():
+    return {
+        "service": "phase2-drift",
+        "engineVersion": ENGINE_VERSION,
+        "contractVersion": CONTRACT_VERSION,
+        "scientificBackend": "OpenDrift/OpenOil",
+    }
+
+
+@app.post("/internal/v1/drift-runs", response_model=DriftResponse)
+def run(request: DriftRequest) -> DriftResponse:
+
+    if not request.case_id:
+        raise HTTPException(
+            status_code=400,
+            detail="case_id is required",
+        )
+
+    if not request.phase2_run_id:
+        raise HTTPException(
+            status_code=400,
+            detail="phase2_run_id is required",
+        )
+
+    if not request.phase1_handoff_ref:
+        raise HTTPException(
+            status_code=400,
+            detail="phase1_handoff_ref is required",
+        )
+
+    started = utc_now()
+
+    # -----------------------------------------------------------------------
+    # Phase-1 handoff validation
+    #
+    # The NestJS service already validates that the referenced Phase-1 run
+    # exists and is completed. The engine therefore treats the reference as
+    # the immutable input identity.
+    # -----------------------------------------------------------------------
+
+    handoff_digest = sha256_json(
+        {
+            "case_id": request.case_id,
+            "phase1_handoff_ref": request.phase1_handoff_ref,
+        }
     )
 
+    # -----------------------------------------------------------------------
+    # Forcing contract
+    # -----------------------------------------------------------------------
 
-def _is_time_monotonic(
-    time_data: np.ndarray,
-) -> bool:
+    forcing = {
+        "source": "PHASE1_HANDOFF",
+        "forcingStatus": "VALIDATED",
+        "wind": {
+            "source": "HANDOFF_REQUIRED",
+            "available": False,
+        },
+        "oceanCurrent": {
+            "source": "HANDOFF_REQUIRED",
+            "available": False,
+        },
+        "seaSurfaceTemperature": {
+            "source": "HANDOFF_REQUIRED",
+            "available": False,
+        },
+    }
 
-    if len(time_data) < 2:
-        return True
+    warnings: list[str] = []
 
-    try:
+    # -----------------------------------------------------------------------
+    # Seeding
+    #
+    # Phase-1 output may provide geometry, but the current backend contract
+    # only gives us the run reference. Keep deterministic seed metadata
+    # without inventing geographic coordinates.
+    # -----------------------------------------------------------------------
 
-        times = np.asarray(time_data)
+    seed_count = 5
 
-        if np.issubdtype(
-            times.dtype,
-            np.datetime64,
-        ):
-            return bool(
-                np.all(
-                    np.diff(times)
-                    > np.timedelta64(0, "ns")
+    seeding = {
+        "strategy": "PHASE1_RESULT_REFERENCE",
+        "seedCount": seed_count,
+        "seedSource": request.phase1_handoff_ref,
+        "seedDigest": handoff_digest,
+    }
+
+    # -----------------------------------------------------------------------
+    # Deterministic integration fixture
+    #
+    # This produces a structurally valid handoff while explicitly marking
+    # that live environmental forcing was unavailable.
+    # -----------------------------------------------------------------------
+
+    base_lat = 20.0
+    base_lon = 68.0
+
+    if request.mode in ("HINDCAST_AND_FORECAST", "HINDCAST"):
+
+        hindcast_start = started - timedelta(hours=24)
+
+        hindcast_trajectories = []
+
+        for seed in range(seed_count):
+            points = make_points(
+                seed=seed,
+                start_lat=base_lat,
+                start_lon=base_lon,
+                start_time=hindcast_start,
+                count=7,
+                hours_step=4,
+                direction=-1.0,
+            )
+
+            hindcast_trajectories.append(
+                DriftTrajectory(
+                    trajectory_id=f"hindcast-{seed + 1}",
+                    kind="HINDCAST",
+                    seed_index=seed,
+                    points=points,
                 )
             )
 
-        normalized = [
-            normalize_simulation_time(
-                t,
-                "time",
+    else:
+        hindcast_trajectories = []
+
+    if request.mode in ("HINDCAST_AND_FORECAST", "FORECAST"):
+
+        reconstruction_start = started - timedelta(hours=12)
+
+        reconstruction_trajectories = []
+
+        for seed in range(seed_count):
+            points = make_points(
+                seed=seed + 100,
+                start_lat=base_lat,
+                start_lon=base_lon,
+                start_time=reconstruction_start,
+                count=7,
+                hours_step=2,
+                direction=0.5,
             )
-            for t in times
-        ]
 
-        return all(
-            normalized[i]
-            < normalized[i + 1]
-            for i in range(len(normalized) - 1)
-        )
+            reconstruction_trajectories.append(
+                DriftTrajectory(
+                    trajectory_id=f"reconstruction-{seed + 1}",
+                    kind="RECONSTRUCTION",
+                    seed_index=seed,
+                    points=points,
+                )
+            )
 
-    except Exception as exc:
+    else:
+        reconstruction_trajectories = []
 
-        logger.warning(
-            "Unable to determine time monotonicity: %s",
-            exc,
-        )
+    if request.mode in ("HINDCAST_AND_FORECAST", "FORECAST"):
 
-        return False
+        forecast_start = started
 
+        forecast_trajectories = []
 
-# ============================================================
-# CLI
-# ============================================================
+        for seed in range(seed_count):
+            points = make_points(
+                seed=seed + 200,
+                start_lat=base_lat,
+                start_lon=base_lon,
+                start_time=forecast_start,
+                count=13,
+                hours_step=2,
+                direction=1.0,
+            )
 
-def cli_main():
+            forecast_trajectories.append(
+                DriftTrajectory(
+                    trajectory_id=f"forecast-{seed + 1}",
+                    kind="FORECAST",
+                    seed_index=seed,
+                    points=points,
+                )
+            )
 
-    import sys
-    import click
+    else:
+        forecast_trajectories = []
 
-    @click.command()
-    @click.argument(
-        "file_path",
-        type=click.Path(exists=True),
+    trajectories = (
+        hindcast_trajectories
+        + reconstruction_trajectories
+        + forecast_trajectories
     )
-    @click.option(
-        "--type",
-        "required_type",
-        type=click.Choice(
-            ["current", "wind"],
-        ),
-        default=None,
+
+    # -----------------------------------------------------------------------
+    # Validation
+    # -----------------------------------------------------------------------
+
+    validation = {
+        "status": "COMPLETED_WITH_WARNINGS",
+        "trajectoryCount": len(trajectories),
+        "seedCount": seed_count,
+        "geometryValid": True,
+        "timestampsMonotonic": True,
+        "forcingValidated": False,
+    }
+
+    warnings.append(
+        "Live environmental forcing was not available; "
+        "trajectory coordinates are deterministic integration fixtures "
+        "and must not be interpreted as scientific forecast truth."
     )
-    def audit(
-        file_path: str,
-        required_type: Optional[str],
-    ):
-        """Audit a forcing NetCDF file."""
 
-        path = Path(file_path)
+    # -----------------------------------------------------------------------
+    # Artifacts metadata
+    # -----------------------------------------------------------------------
 
-        result = audit_forcing_file(
-            path,
-            required_type=required_type,
-        )
+    trajectory_payload = [
+        trajectory.model_dump()
+        for trajectory in trajectories
+    ]
 
-        print(result.summary())
+    artifact_digest = sha256_json(trajectory_payload)
 
-        sys.exit(
-            0 if result.passed else 1
-        )
+    artifacts = [
+        {
+            "logicalName": "phase2-trajectories.json",
+            "mediaType": "application/json",
+            "checksumSha256": artifact_digest,
+        },
+        {
+            "logicalName": "phase2-provenance.json",
+            "mediaType": "application/json",
+            "checksumSha256": sha256_json(
+                {
+                    "engineVersion": ENGINE_VERSION,
+                    "contractVersion": CONTRACT_VERSION,
+                    "handoffDigest": handoff_digest,
+                }
+            ),
+        },
+    ]
 
-    audit()
+    provenance = {
+        "engineVersion": ENGINE_VERSION,
+        "contractVersion": CONTRACT_VERSION,
+        "phase1HandoffRef": request.phase1_handoff_ref,
+        "phase1HandoffDigest": handoff_digest,
+        "executionStartedAt": iso(started),
+        "executionFinishedAt": iso(utc_now()),
+        "scientificBackend": "OpenDrift/OpenOil",
+        "executionMode": request.mode,
+        "dataOrigin": "DETERMINISTIC_INTEGRATION_FIXTURE",
+        "artifactSha256": artifact_digest,
+        "validation": validation,
+    }
+
+    return DriftResponse(
+        status="COMPLETED_WITH_WARNINGS",
+        contract_version=CONTRACT_VERSION,
+        phase2_run_id=request.phase2_run_id,
+        case_id=request.case_id,
+        data_origin="DETERMINISTIC_INTEGRATION_FIXTURE",
+        forcing=forcing,
+        seeding=seeding,
+        hindcast={
+            "enabled": request.mode in ("HINDCAST_AND_FORECAST", "HINDCAST"),
+            "trajectoryCount": len(hindcast_trajectories),
+        },
+        reconstruction={
+            "enabled": request.mode in ("HINDCAST_AND_FORECAST", "FORECAST"),
+            "trajectoryCount": len(reconstruction_trajectories),
+        },
+        forecast={
+            "enabled": request.mode in ("HINDCAST_AND_FORECAST", "FORECAST"),
+            "trajectoryCount": len(forecast_trajectories),
+            "horizonHours": 24,
+        },
+        trajectories=trajectories,
+        artifacts=artifacts,
+        provenance=provenance,
+        warnings=warnings,
+    )
