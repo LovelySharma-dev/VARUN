@@ -71,23 +71,6 @@ phase2-validate = "app.scripts.validate_phase2_run:main"
 where = ["."]
 include = ["app*"]
 
-dev = [
-    "ruff>=0.2.0",
-    "black>=24.1.0",
-    "isort>=5.13.0",
-    "mypy>=1.8.0",
-    "ipython>=8.20.0",
-]
-
-[project.scripts]
-phase2-audit = "app.forcing.audit:cli_main"
-phase2-run = "app.simulation.runner:cli_main"
-phase2-validate = "app.scripts.validate_phase2_run:main"
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["app*"]
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
